@@ -4,7 +4,7 @@ We generated the datasets in UK, IEEE24, IEEE39, SwissGrid and IEEE118 formats. 
 
 To run the file,
 
-    train_gnn.py
+    python code/train_gnn.py
 
 We have the main arguments to control namely 
 **--model_name**: transformer / gin / gat / gcn
