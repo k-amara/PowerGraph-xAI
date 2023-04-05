@@ -288,7 +288,8 @@ def arg_parse():
         num_explained_y=5,
         opt="adam",
         lr=0.01,
-        num_epochs=400,
+        num_epochs=50, #400
+        batch_size=128,
         train_ratio=0.8,
         val_ratio=0.15,
         test_ratio=0.10,
@@ -298,7 +299,7 @@ def arg_parse():
         datatype="binary",
         num_layers=3,
         dropout=0,
-        readout="identity",
+        readout="max", #identity
         weight_decay=0.0,
         model_name="transformer",
         edge_ent=1.0,

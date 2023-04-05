@@ -307,19 +307,8 @@ if __name__ == "__main__":
     args = get_graph_size_args(args)
 
 
-    # # Fill in the default parameters for the architecture and the training of the model here
-    # Batch size, learning rate, weight decay
-
-    (
-        args.graph_classification,
-        args.num_epochs,
-        args.lr,
-        args.weight_decay,
-        args.dropout,
-        args.readout,
-        args.batch_size,
-    ) = ("True", 50, 0.001, 0.0000, 0.0, "max", 128)
-    
+    # Set graph classification as true here
+    args.graph_classification = "True"
 
     # for loop to indicate the number of layers and hidden dimensions
     
