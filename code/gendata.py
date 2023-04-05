@@ -1,3 +1,8 @@
+"""
+Code for calling the InMemoryDataset class to generate or get the dataset
+
+"""
+
 import os
 
 import torch
@@ -13,6 +18,8 @@ from torch import default_generator
 from utils.parser_utils import arg_parse, get_graph_size_args
 
 
+
+# if dataset exists, load it, otherwise generate it
 def get_dataset(dataset_root, **kwargs):
     dataset_name = kwargs.get("dataset_name")
     datatype = kwargs.get("datatype")
@@ -84,6 +91,8 @@ def get_dataloader(
     return dataloader
 
 
+
+# This is the main function to check if the dataset is prepared
 if __name__ == "__main__":
     args = arg_parse()
     args = get_graph_size_args(args)
@@ -97,6 +106,4 @@ if __name__ == "__main__":
     }
 
     dataset = get_dataset(args.data_save_dir, "uk", **data_params)
-    # dataset = get_dataset(args.data_save_dir, "cora")
-    #print(dataset)
-    #print(dataset.data)
+

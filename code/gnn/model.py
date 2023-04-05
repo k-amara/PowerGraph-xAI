@@ -151,6 +151,7 @@ class GNNBase(nn.Module):
         return x, edge_index, edge_attr, batch
 
 
+# Basic structure of GNNs
 class GNN_basic(GNNBase):
     def __init__(
         self,
@@ -186,6 +187,7 @@ class GNN_basic(GNNBase):
         emb = self.get_emb(*args, **kwargs)
         x = self.readout_layer(emb, batch)
         self.logits = self.mlps(x)
+        print(self.logits.shape)
         self.probs = F.log_softmax(self.logits, dim=-1)
         return self.probs
 
@@ -198,8 +200,6 @@ class GNN_basic(GNNBase):
         for layer in self.convs:
             x = layer(x, edge_index, edge_attr) 
             nn.PReLU()
-            #a = nn.ReLU()#PReLU(device='cuda')
-            #x = F.relu(x)
             x = F.dropout(x, self.dropout, training=self.training)
         return x
 
@@ -258,10 +258,8 @@ class GCN(GNN_basic):
         x, edge_index, edge_attr, _ = self._argsparse(*args, **kwargs)
 
         for layer in self.convs:
-            x = layer(x, edge_index) # error here for GCN
+            x = layer(x, edge_index)
             nn.PReLU()
-            #a = nn.ReLU()#PReLU(device='cuda')
-            #x = F.relu(x)
             x = F.dropout(x, self.dropout, training=self.training)
         return x
     
@@ -325,6 +323,6 @@ class TRANSFORMER(GNN_basic): #uppercase
                    )
             current_dim = self.hidden_dim
 
-            # FC layers
+        # FC layers
         self.mlps = nn.Linear(current_dim, self.output_dim)
         return

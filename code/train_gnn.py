@@ -64,10 +64,6 @@ class TrainModel(object):
     def _train_batch(self, data, labels):
         logits = self.model(data=data)
         if self.graph_classification:
-            # labels_onehot = torch.zeros([len(labels), 4], device = self.device)
-            # labels_onehot = labels_onehot.scatter_(1, labels.unsqueeze(1), 1)
-            # print(f"logits: {logits}")
-            # print(f"labels: {labels}")
             loss = self.__loss__(logits, labels)
         else:
             loss = self.__loss__(logits[data.train_mask], labels[data.train_mask])
