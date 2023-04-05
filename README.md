@@ -2,7 +2,7 @@
 
 We generated the datasets in UK, IEEE24, IEEE39, SwissGrid and IEEE118 formats. We use **InMemoryDataset** class of Pytorch Geometric for the dataloader part.  
 
-To run the file,
+To test the datasets with different GNN architectures run,
 
     python code/train_gnn.py
 
@@ -11,4 +11,13 @@ We have the main arguments to control namely
 **--datatype**: binary / multiclass / regression
 **--dataset_name**: uk / ieee24 / ieee39
 
-Other parameters like batch_size can be controlled in the train_gnn file. 
+
+Make sure you have the dataset as per format. 
+
+├── code
+│   ├── dataset
+│   │   ├── processed
+│   │   ├── raw ├── *.mat
+
+
+Remove the for loop in train_gnn.py if running for a specific **--hidden_dim** and **num_layers**
