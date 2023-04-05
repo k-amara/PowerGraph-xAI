@@ -187,7 +187,6 @@ class GNN_basic(GNNBase):
         emb = self.get_emb(*args, **kwargs)
         x = self.readout_layer(emb, batch)
         self.logits = self.mlps(x)
-        print(self.logits.shape)
         self.probs = F.log_softmax(self.logits, dim=-1)
         return self.probs
 

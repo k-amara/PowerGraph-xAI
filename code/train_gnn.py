@@ -176,7 +176,6 @@ class TrainModel(object):
                 losses = []
                 for batch in self.loader["train"]:
                     batch = batch.to(self.device)
-                    # print(f"batch.y: {batch.y}")
                     loss = self._train_batch(batch, batch.y)
                     losses.append(loss)
                 train_loss = torch.FloatTensor(losses).mean().item()
@@ -253,7 +252,6 @@ def train_gnn(args, args_group):
 
     if args.datatype.lower() == "binary" or args.datatype.lower() == "multiclass":
         dataset_params["num_classes"] = len(np.unique(dataset.data.y.cpu().numpy())) #modify? +1
-        print(f"num_classes: {dataset_params['num_classes']}")
     dataset_params["datatype"] = args.datatype
     dataset_params["num_node_features"] = dataset.data.x.size(1)
     if eval(args.graph_classification):

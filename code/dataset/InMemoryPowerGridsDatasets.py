@@ -69,8 +69,6 @@ class PowerGrid(InMemoryDataset):
             mask[indices] = False
             return tensor[mask]
 
-        print("Processing...")
-
         # load branch list also called edge order or edge index
         path = os.path.join(self.raw_path, 'blist.mat')
         edge_order = mat73.loadmat(path)
