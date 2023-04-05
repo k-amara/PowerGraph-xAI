@@ -27,7 +27,6 @@ from sklearn.metrics import balanced_accuracy_score, f1_score
 
 # Save directory model_name + dataset_name + layers + hidden_dim
 
-
 class TrainModel(object):
     def __init__(
         self,
@@ -152,8 +151,8 @@ class TrainModel(object):
     def train(self, train_params=None, optimizer_params=None):
         num_epochs = train_params["num_epochs"]
         num_early_stop = train_params["num_early_stop"]
-        milestones = train_params["milestones"]
-        gamma = train_params["gamma"]
+        #milestones = train_params["milestones"] # needed if using a different LR scheduler
+        #gamma = train_params["gamma"]
 
         if optimizer_params is None:
             self.optimizer = Adam(self.model.parameters())
@@ -306,11 +305,7 @@ if __name__ == "__main__":
     parser, args = arg_parse()
     args = get_graph_size_args(args)
 
-
-    # Set graph classification as true here
-    args.graph_classification = "True"
-
-    # for loop to indicate the number of layers and hidden dimensions
+    # for loop the training architecture for the number of layers and hidden dimensions
     
     for i in [1,2,3]: # number of layers
         for j in [8,16,32]: # hidden dimension

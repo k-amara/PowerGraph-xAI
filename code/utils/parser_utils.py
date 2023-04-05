@@ -3,13 +3,13 @@ import numpy as np
 import torch
 from utils.path import DATA_DIR, LOG_DIR, MODEL_DIR, RESULT_DIR, MASK_DIR
 
-
+# Fix random seed
 def fix_random_seed(seed):
     np.random.seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
 
-
+# other dataset args
 def get_graph_size_args(args):
     if not eval(args.graph_classification):
         if args.dataset_name == "ba_house":
@@ -44,7 +44,7 @@ def get_graph_size_args(args):
             args.num_basis = args.width_basis
     return args
 
-
+# other dataset args
 def get_data_args(data, args):
     if args.dataset_name == "mutag":
         args.num_classes = 2
@@ -58,6 +58,7 @@ def get_data_args(data, args):
     return args
 
 
+# Main arg parser
 def arg_parse():
 
     parser = argparse.ArgumentParser()
@@ -180,7 +181,6 @@ def arg_parse():
         "--graph_classification",
         help="graph or node classification",
         type=str,
-        default="True",
     )
     parser_model_params.add_argument("--hidden_dim", type=int, help="Hidden dimension")
 
@@ -286,6 +286,12 @@ def arg_parse():
         width_basis=300,
         num_shapes=150,
         num_explained_y=5,
+
+        graph_classification="True",
+        datatype="binary",
+        num_classes=2,
+        model_name="transformer",
+       
         opt="adam",
         lr=0.01,
         num_epochs=50, #400
@@ -293,15 +299,14 @@ def arg_parse():
         train_ratio=0.8,
         val_ratio=0.15,
         test_ratio=0.10,
+
+
         num_node_features=3,
         hidden_dim=32,
-        num_classes=2,
-        datatype="binary",
         num_layers=3,
         dropout=0,
         readout="max", #identity
         weight_decay=0.0,
-        model_name="transformer",
         edge_ent=1.0,
         edge_size=0.005,
         explainer_name="gnnexplainer",
@@ -310,6 +315,7 @@ def arg_parse():
     return parser, args
 
 
+# Creating groups with argparse
 def create_args_group(parser, args):
     arg_groups = {}
     for group in parser._action_groups:
