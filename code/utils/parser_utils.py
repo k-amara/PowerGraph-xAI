@@ -52,6 +52,8 @@ def get_data_args(data, args):
     elif args.dataset_name.startswith(tuple(["ba", "tree"])):
         args.num_classes = data.num_classes
         args.num_node_features = data.x.size(1)
+    elif args.graph_regression:
+        args.num_node_features = data.x.size(1)
     else:
         args.num_classes = len(np.unique(data.y.cpu().numpy()))
         args.num_node_features = data.x.size(1)
@@ -64,7 +66,7 @@ def arg_parse():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--dest", help="dest", type=str, default="/cluster/home/alakshmanan/"
+        "--dest", help="dest", type=str, default="H:/"
     )
     # saving data, model, figures
     parser.add_argument(
@@ -182,6 +184,11 @@ def arg_parse():
         help="graph or node classification",
         type=str,
     )
+    parser_model_params.add_argument(
+        "--graph_regression",
+        help="graph regression",
+        type=str,
+    )
     parser_model_params.add_argument("--hidden_dim", type=int, help="Hidden dimension")
 
     parser_model_params.add_argument(
@@ -282,30 +289,27 @@ def arg_parse():
         ckptdir="ckpt",
         focus="phenomenon",
         mask_nature="hard",
-        dataset_name="uk",
+        dataset_name="ieee24",
         width_basis=300,
         num_shapes=150,
         num_explained_y=5,
-
-        graph_classification="True",
-        datatype="binary",
+        graph_classification="False",
+        graph_regression="True",
+        datatype="regression",
         num_classes=2,
         model_name="transformer",
-       
         opt="adam",
         lr=0.01,
         num_epochs=50, #400
         batch_size=128,
         train_ratio=0.8,
-        val_ratio=0.15,
-        test_ratio=0.10,
-
-
+        val_ratio=0.05,
+        test_ratio=0.15,
         num_node_features=3,
         hidden_dim=32,
         num_layers=3,
         dropout=0,
-        readout="max", #identity
+        readout="cat_max_sum", #identity
         weight_decay=0.0,
         edge_ent=1.0,
         edge_size=0.005,

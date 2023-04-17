@@ -13,7 +13,7 @@ from torch_geometric.data.batch import Batch
 from torch_geometric.nn.glob import global_mean_pool, global_add_pool, global_max_pool
 
 
-def get_gnnNets(input_dim, output_dim, model_params):
+def get_gnnNets(input_dim, output_dim, model_params, graph_regression):
     if model_params["model_name"].lower() in [
         "base",
         "gcn",
@@ -21,10 +21,16 @@ def get_gnnNets(input_dim, output_dim, model_params):
         "gin",
         "transformer",
     ]:
-        GNNmodel = model_params["model_name"].upper()
-        return eval(GNNmodel)(
-            input_dim=input_dim, output_dim=output_dim, model_params=model_params
-        )
+        if graph_regression:
+            GNNmodel = model_params["model_name"].upper()
+            return eval(GNNmodel)(
+                input_dim=input_dim, output_dim=output_dim, model_params=model_params, graph_regression=graph_regression
+            )
+        else:
+            GNNmodel = model_params["model_name"].upper()
+            return eval(GNNmodel)(
+                input_dim=input_dim, output_dim=output_dim, model_params=model_params, graph_regression=graph_regression
+            )
     else:
         raise ValueError(
             f"GNN name should be gcn " f"and {model_params.gnn_name} is not defined."
@@ -37,7 +43,8 @@ def identity(x: torch.Tensor, batch: torch.Tensor):
 
 def cat_max_sum(x, batch):
     node_dim = x.shape[-1]
-    num_node = 29
+    num_node = 24
+
     x = x.reshape(-1, num_node, node_dim)
     return torch.cat([x.max(dim=1)[0], x.sum(dim=1)], dim=-1)
 
@@ -158,6 +165,7 @@ class GNN_basic(GNNBase):
         input_dim,
         output_dim,
         model_params,
+        graph_regression,
     ):
         super(GNN_basic, self).__init__()
         self.input_dim = input_dim
@@ -169,6 +177,7 @@ class GNN_basic(GNNBase):
         self.readout = model_params["readout"]
         self.readout_layer = GNNPool(self.readout)
         self.get_layers()
+        self.graph_regression = graph_regression
 
     def get_layers(self):
         # GNN layers
@@ -178,7 +187,7 @@ class GNN_basic(GNNBase):
             self.convs.append(NNConv(current_dim, self.hidden_dim))
             current_dim = self.hidden_dim
         # FC layers
-        self.mlps = nn.Linear(current_dim, self.output_dim)
+        self.mlps = nn.Linear(current_dim*2, self.output_dim)
         return
 
     def forward(self, *args, **kwargs):
@@ -187,18 +196,24 @@ class GNN_basic(GNNBase):
         emb = self.get_emb(*args, **kwargs)
         x = self.readout_layer(emb, batch)
         self.logits = self.mlps(x)
-        self.probs = F.log_softmax(self.logits, dim=-1)
-        return self.probs
+        if self.graph_regression:
+            return self.logits
+        else:
+            self.probs = F.log_softmax(self.logits, dim=-1)
+            return self.probs
 
     def loss(self, pred, label):
-        return F.cross_entropy(pred, label)
+        if self.graph_regression:
+            return F.mse_loss(pred, label)
+        else:
+            return F.cross_entropy(pred, label)
 
     def get_emb(self, *args, **kwargs):
         x, edge_index, edge_attr, _ = self._argsparse(*args, **kwargs)
 
         for layer in self.convs:
             x = layer(x, edge_index, edge_attr) 
-            nn.PReLU()
+            nn.LeakyReLU()
             x = F.dropout(x, self.dropout, training=self.training)
         return x
 
@@ -207,13 +222,14 @@ class GNN_basic(GNNBase):
 
 
 class GAT(GNN_basic):
-    def __init__(self, input_dim, output_dim, model_params):
+    def __init__(self, input_dim, output_dim, model_params, graph_regression):
         self.edge_dim = model_params["edge_dim"]
 
         super().__init__(
             input_dim,
             output_dim,
             model_params,
+            graph_regression,
         )
 
     def get_layers(self):
@@ -225,7 +241,7 @@ class GAT(GNN_basic):
             )
             current_dim = self.hidden_dim
         # FC layers
-        self.mlps = nn.Linear(current_dim, self.output_dim)
+        self.mlps = nn.Linear(current_dim*2, self.output_dim)
         return
         
 
@@ -236,11 +252,13 @@ class GCN(GNN_basic):
         input_dim,
         output_dim,
         model_params,
+        graph_regression,
     ):
         super().__init__(
             input_dim,
             output_dim,
             model_params,
+            graph_regression,
         )
 
     def get_layers(self):
@@ -250,7 +268,7 @@ class GCN(GNN_basic):
             self.convs.append(GCNConv(current_dim, self.hidden_dim))
             current_dim = self.hidden_dim
         # FC layers
-        self.mlps = nn.Linear(current_dim, self.output_dim)
+        self.mlps = nn.Linear(current_dim*2, self.output_dim)
         return
     
     def get_emb(self, *args, **kwargs):
@@ -261,7 +279,6 @@ class GCN(GNN_basic):
             nn.PReLU()
             x = F.dropout(x, self.dropout, training=self.training)
         return x
-    
 
 
 class GIN(GNN_basic):
@@ -270,6 +287,7 @@ class GIN(GNN_basic):
         input_dim,
         output_dim,
         model_params,
+        graph_regression,
     ):
         self.edge_dim = model_params["edge_dim"]
 
@@ -277,6 +295,7 @@ class GIN(GNN_basic):
             input_dim,
             output_dim,
             model_params,
+            graph_regression,
         )
 
     def get_layers(self):
@@ -295,7 +314,7 @@ class GIN(GNN_basic):
             )
             current_dim = self.hidden_dim
         # FC layers
-        self.mlps = nn.Linear(current_dim, self.output_dim)
+        self.mlps = nn.Linear(current_dim*2, self.output_dim)
         return
 
 
@@ -305,12 +324,14 @@ class TRANSFORMER(GNN_basic): #uppercase
         input_dim,
         output_dim,
         model_params,
+        graph_regression,
     ):
         self.edge_dim = model_params["edge_dim"]
         super().__init__(
             input_dim,
             output_dim,
             model_params,
+            graph_regression,
         )
 
     def get_layers(self):
@@ -323,5 +344,5 @@ class TRANSFORMER(GNN_basic): #uppercase
             current_dim = self.hidden_dim
 
         # FC layers
-        self.mlps = nn.Linear(current_dim, self.output_dim)
+        self.mlps = nn.Linear(current_dim*2, self.output_dim)
         return
