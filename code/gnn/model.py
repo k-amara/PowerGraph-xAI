@@ -43,7 +43,7 @@ def identity(x: torch.Tensor, batch: torch.Tensor):
 
 def cat_max_sum(x, batch):
     node_dim = x.shape[-1]
-    num_node = 24
+    num_node = 118
 
     x = x.reshape(-1, num_node, node_dim)
     return torch.cat([x.max(dim=1)[0], x.sum(dim=1)], dim=-1)

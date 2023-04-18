@@ -266,7 +266,7 @@ class TrainModel(object):
             )
 
             self.model.to(self.device)
-            best_eval_r2score = -1.0
+            best_eval_r2score = -100.0
             best_eval_loss = 0.0
             early_stop_counter = 0
             for epoch in range(num_epochs):

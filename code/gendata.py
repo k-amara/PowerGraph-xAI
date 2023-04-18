@@ -105,5 +105,5 @@ if __name__ == "__main__":
         "val_ratio": args.val_ratio,
     }
 
-    dataset = get_dataset(args.data_save_dir, "ieee24", **data_params)
+    dataset = get_dataset(args.data_save_dir, "ieee118", **data_params)
 
