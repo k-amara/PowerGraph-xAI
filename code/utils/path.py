@@ -3,7 +3,7 @@
 import os
 
 # CKPT_ROOT = "C:/Users/avarbella/Documents/GraphGym-master/GraphGym-master/graphframex-main/"
-CKPT_ROOT = "/cluster/home/alakshmanan/ra_work/"
+CKPT_ROOT = "C:/Users/avarbella/Documents/GraphGym-master/powergrid_datasets/"
 DATA_DIR = CKPT_ROOT + "dataset/"
 MODEL_DIR = CKPT_ROOT + "model/"
 LOG_DIR = CKPT_ROOT + "logs/"

@@ -14,7 +14,7 @@ import torch
 from torch_geometric.data import Data
 import numpy as np
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda:2' if torch.cuda.is_available() else 'cpu')
 
 
 def index_edgeorder(edge_order):
@@ -28,7 +28,7 @@ class PowerGrid(InMemoryDataset):
         "ieee24": ["ieee24", "Ieee24", "IEEE24", None],
         "ieee39": ["ieee39", "Ieee39", "IEEE39", None],
         "ieee118": ["ieee118", "Ieee118", "IEEE118", None],
-    }
+            }
     def __init__(self, root, name, datatype='Binary', transform=None, pre_transform=None, pre_filter=None):
         
         self.datatype = datatype.lower()
@@ -94,6 +94,7 @@ class PowerGrid(InMemoryDataset):
         edge_f = edge_f['E_f_post']
         of_bi = of_bi['output_features']
         of_mc = of_mc['category']
+        of_reg = of_reg['dns_MW']
 
         data_list = []
         # MAIN data processing loop
@@ -122,12 +123,13 @@ class PowerGrid(InMemoryDataset):
             if self.datatype.lower() == 'binary':
                 ydata = torch.tensor(of_bi[i][0], dtype=torch.float, device=device).view(1, -1)
             if self.datatype.lower() == 'regression':
-                ydata = torch.tensor(of_reg[i][0], dtype=torch.int, device=device).view(1, -1)
+                ydata = torch.tensor(of_reg[i], dtype=torch.float, device=device).view(1, -1)
             if self.datatype.lower() == 'multiclass':
                 #do argmax
-                ydata = torch.tensor(np.argmax(of_mc[i][0]), dtype=torch.int, device=device).view(1, -1)
+                ydata = torch.tensor(np.argmax(of_mc[i][0]), dtype=torch.float, device=device).view(1, -1)
                 # ydata = torch.tensor(of_mc[i][0], dtype=torch.int, device=device).view(1, -1)
             # Fill Data object, 1 Data object -> 1 graph
+
             data = Data(x=x, edge_index=edge_iw, edge_attr=f_totw, y=ydata)
             # append Data object to datalist
             data_list.append(data)
