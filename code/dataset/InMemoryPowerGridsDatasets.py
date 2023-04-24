@@ -28,8 +28,7 @@ class PowerGrid(InMemoryDataset):
         "ieee24": ["ieee24", "Ieee24", "IEEE24", None],
         "ieee39": ["ieee39", "Ieee39", "IEEE39", None],
         "ieee118": ["ieee118", "Ieee118", "IEEE118", None],
-        "swiss": ["swiss", "Swiss", "Swissgrid", None],
-    }
+            }
     def __init__(self, root, name, datatype='Binary', transform=None, pre_transform=None, pre_filter=None):
         
         self.datatype = datatype.lower()
