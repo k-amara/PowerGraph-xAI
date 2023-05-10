@@ -3,7 +3,7 @@
 """
 from datetime import datetime
 import os
-
+import json
 import torch
 
 
@@ -199,3 +199,17 @@ def gen_feat_importance_plt_name(args):
         os.path.join(save_fig_dir, args.explainer_name)
         + f"_focus_{args.true_label_as_target}_hard_{args.hard_mask}_sparsity_{args.sparsity}_{date}.png"
     )
+
+
+def write_to_json(entry, fname):
+    a = []
+    if (not os.path.exists(fname)) or (os.stat(fname).st_size == 0):
+        a.append(entry)
+        with open(fname, mode='w', encoding='utf-8', errors='ignore') as f:
+            f.write(json.dumps(a, indent=2))
+    else:
+        with open(fname, 'r', encoding='utf-8', errors='ignore') as feedsjson:
+            feeds = json.load(feedsjson)
+        feeds.append(entry)
+        with open(fname, mode='w', encoding='utf-8', errors='ignore') as f:
+            f.write(json.dumps(feeds, indent=2))

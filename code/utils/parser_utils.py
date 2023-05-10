@@ -1,15 +1,17 @@
 import argparse
 import numpy as np
 import torch
+import random
 from utils.path import DATA_DIR, LOG_DIR, MODEL_DIR, RESULT_DIR, MASK_DIR
 
-# Fix random seed
+
 def fix_random_seed(seed):
     np.random.seed(seed)
+    random.seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(seed)
 
-# other dataset args
+
 def get_graph_size_args(args):
     if not eval(args.graph_classification):
         if args.dataset_name == "ba_house":
@@ -44,29 +46,29 @@ def get_graph_size_args(args):
             args.num_basis = args.width_basis
     return args
 
-# other dataset args
-def get_data_args(data, args):
-    if args.dataset_name == "mutag":
-        args.num_classes = 2
-        args.num_node_features = 7
-    elif args.dataset_name.startswith(tuple(["ba", "tree"])):
-        args.num_classes = data.num_classes
-        args.num_node_features = data.x.size(1)
-    elif args.graph_regression:
-        args.num_node_features = data.x.size(1)
-    else:
-        args.num_classes = len(np.unique(data.y.cpu().numpy()))
-        args.num_node_features = data.x.size(1)
+
+def get_data_args(dataset, args):
+    assert dataset.data.y.ndim == 1 # make sure it is a one class problem
+    if args.datatype.lower() == "binary" or args.datatype.lower() == "multiclass":
+        args.num_classes = max(np.unique(dataset.data.y.cpu().numpy()))+1
+    if args.datatype.lower() == "regression":
+        args.num_classes = 1
+    args.num_node_features = dataset.data.x.size(1)
+    
+    if dataset.data.edge_attr.ndim == 1:
+        dataset.data.edge_attr = torch.unsqueeze(dataset.data.edge_attr, 1)
+    
+    args.edge_dim = dataset.data.edge_attr.size(1)
+    # args.datatype = "regression" if args.num_classes==1 else "binary" if args.num_classes==2 else "multiclass"
     return args
 
 
-# Main arg parser
 def arg_parse():
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--dest", help="dest", type=str, default="H:/"
+        "--dest", help="dest", type=str, default="/cluster/home/kamara/"
     )
     # saving data, model, figures
     parser.add_argument(
@@ -115,12 +117,19 @@ def arg_parse():
         type=str,
         default="False",
     )
+    # generalization capacity - test on unseen graphs
+    parser.add_argument(
+        "--unseen",
+        help="Split the dataset into data and unseen data and test on unseen data",
+        type=str,
+        default="False",
+    )
 
     # dataset parameters
     parser_dataset_params = parser.add_argument_group("dataset_params")
     parser_dataset_params.add_argument("--dataset_name", type=str)
     parser_dataset_params.add_argument(
-        "--seed", help="random seed", type=int, default=1000
+        "--seed", help="random seed", type=int, default=0
     )
     parser_dataset_params.add_argument(
         "--width_basis", help="width of base graph", type=int
@@ -131,13 +140,11 @@ def arg_parse():
     parser_dataset_params.add_argument(
         "--num_basis", help="number of nodes in the base graph", type=int
     )
+    parser_dataset_params.add_argument("--datatype", help="the type of classification (binary or multiclass) for the powergrid datasets (uk, ieee24, ieee39, ieee118)", type=str, default="binary")
     parser_dataset_params.add_argument("--num_classes", help="output_dim", type=int)
-    parser_dataset_params.add_argument("--datatype", help="dataset_type", type=str, default = "binary")
     parser_dataset_params.add_argument(
         "--num_node_features", help="input_dim", type=int
     )
-    parser_dataset_params.add_argument("--batch_size", type = int, default=128)
-
     parser.add_argument(
         "--num_top_edges",
         help="# edges in groundtruth explanation (for syn data) or max size for subgraphX (for real data)",
@@ -176,18 +183,14 @@ def arg_parse():
     parser_model_params = parser.add_argument_group("model_params")
     parser_model_params.add_argument(
         "--model_name",
-        help="[base, gat, gcn, gin]",
+        help="[gat, gcn, gin, transformer]. GCN can only be used for data with no or 1D edge features.",
         type=str,
     )
     parser_model_params.add_argument(
         "--graph_classification",
         help="graph or node classification",
         type=str,
-    )
-    parser_model_params.add_argument(
-        "--graph_regression",
-        help="graph regression",
-        type=str,
+        default="True",
     )
     parser_model_params.add_argument("--hidden_dim", type=int, help="Hidden dimension")
 
@@ -201,7 +204,9 @@ def arg_parse():
         "--readout", type=str, help="Readout type [mean, sum, max]."
     )
     parser_model_params.add_argument(
-        "--edge_dim", type=int, help="Edge feature dimension (only for GAT and Trans model).", default=4
+        "--edge_dim",
+        type=int,
+        help="Edge feature dimension (only for GAT, GIN and TRANSFORMER model).",
     )
 
     # explainer parameters
@@ -210,7 +215,7 @@ def arg_parse():
     parser_explainer_params.add_argument(
         "--groundtruth",
         type=str,
-        default="False",
+        default="True",
     )
     parser_explainer_params.add_argument(
         "--focus",
@@ -226,12 +231,6 @@ def arg_parse():
         type=str,
         default="mix",
     )  # ["correct", "wrong", "mix"]
-    parser_explainer_params.add_argument(
-        "--top_acc",
-        help="Top accuracy for synthetic dataset only",
-        type=str,
-        default="False",
-    )
     parser_explainer_params.add_argument(
         "--explained_target",
         help="the class you only want to explain; None otherwise",
@@ -260,7 +259,7 @@ def arg_parse():
         "--transf_params",
         help="list of transformation degrees",
         type=str,
-        default="5,10",
+        default='[5,10]',
     )
     parser_explainer_params.add_argument(
         "--directed",
@@ -289,28 +288,22 @@ def arg_parse():
         ckptdir="ckpt",
         focus="phenomenon",
         mask_nature="hard",
-        dataset_name="ieee118",
+        dataset_name="ba_2motifs",
         width_basis=300,
         num_shapes=150,
         num_explained_y=5,
-        graph_classification="False",
-        graph_regression="True",
-        datatype="regression",
-        num_classes=2,
-        model_name="transformer",
         opt="adam",
-        lr=0.01,
-        num_epochs=100, #400
-        batch_size=128,
-        train_ratio=0.80,
-        val_ratio=0.10,
-        test_ratio=0.10,
-        num_node_features=3,
-        hidden_dim=32,
+        lr=0.005,
+        num_epochs=400,
+        train_ratio=0.8,
+        val_ratio=0.15,
+        test_ratio=0.1,
+        hidden_dim=20,
         num_layers=3,
         dropout=0,
-        readout="cat_max_sum", #identity
-        weight_decay=0.0,
+        readout="identity",
+        weight_decay=5e-4,
+        model_name="trasnformer",
         edge_ent=1.0,
         edge_size=0.005,
         explainer_name="gnnexplainer",
@@ -319,10 +312,10 @@ def arg_parse():
     return parser, args
 
 
-# Creating groups with argparse
 def create_args_group(parser, args):
     arg_groups = {}
     for group in parser._action_groups:
         group_dict = {a.dest: getattr(args, a.dest, None) for a in group._group_actions}
         arg_groups[group.title] = group_dict
     return arg_groups
+

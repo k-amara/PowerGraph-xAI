@@ -53,7 +53,6 @@ class TrainModel(object):
 
         if self.graph_classification or self.graph_regression:
             dataloader_params = kwargs.get("dataloader_params")
-            print(dataloader_params)
             self.loader = get_dataloader(dataset, **dataloader_params)
 
     def __loss__(self, logits, labels):
@@ -96,6 +95,8 @@ class TrainModel(object):
                 warnings.warn("The node mask is None")
                 mask = torch.ones(labels.shape[0])
             loss = self.__loss__(logits[mask], labels[mask])
+            loss = loss.item()
+            preds = logits.argmax(-1)
 
         return loss, preds
 
@@ -121,7 +122,7 @@ class TrainModel(object):
             )
             return eval_loss, eval_acc, eval_balanced_acc, eval_f1_score
         elif self.graph_regression:
-            losses, r2scores, preds, targets = [], [], [], []
+            losses, r2scores = [], []
             for batch in self.loader["eval"]:
                 batch = batch.to(self.device)
                 loss, batch_preds = self._eval_batch(batch, batch.y)
@@ -139,6 +140,8 @@ class TrainModel(object):
             eval_acc = (preds == data.y).float().mean().item()
             eval_balanced_acc = balanced_accuracy_score(data.y, preds)
             eval_f1_score = f1_score(data.y, preds, average="weighted")
+        return eval_loss, eval_acc, eval_balanced_acc, eval_f1_score
+
 
     def test(self):
         state_dict = torch.load(
@@ -148,37 +151,51 @@ class TrainModel(object):
         self.model = self.model.to(self.device)
         self.model.eval()
         if self.graph_classification:
-            losses, accs, balanced_accs, f1_scores = [], [], [], []
+            losses, preds, accs, balanced_accs, f1_scores = [], [], [], [], []
             for batch in self.loader["test"]:
                 batch = batch.to(self.device)
                 loss, batch_preds = self._eval_batch(batch, batch.y)
                 losses.append(loss)
+                preds.append(batch_preds)
                 accs.append(batch_preds == batch.y)
                 balanced_accs.append(balanced_accuracy_score(batch.y.cpu(), batch_preds.cpu()))
                 f1_scores.append(f1_score(batch.y.cpu(), batch_preds.cpu(), average="weighted"))
             test_loss = torch.tensor(losses).mean().item()
+            preds = torch.cat(preds, dim=-1)
             test_acc = torch.cat(accs, dim=-1).float().mean().item()
             test_balanced_acc = np.mean(balanced_accs)
             test_f1_score = np.mean(f1_scores)
             print(
                 f"Test loss: {test_loss:.4f}, test acc {test_acc:.4f}, balanced test acc {test_balanced_acc:.4f}, test f1 score {test_f1_score:.4f}"
             )
-            return test_loss, test_acc, test_balanced_acc, test_f1_score
+            scores = {
+            "test_loss": test_loss,
+            "test_acc": test_acc,
+            "test_balanced_acc": test_balanced_acc,
+            "test_f1_score": test_f1_score,
+            }
+            self.save_scores(scores)
+            return test_loss, test_acc, test_balanced_acc, test_f1_score, preds
         elif self.graph_regression:
-
-            losses, r2scores, preds, targets = [], [], [], []
+            losses, r2scores, preds = [], [], []
             for batch in self.loader["test"]:
                 batch = batch.to(self.device)
                 loss, batch_preds = self._eval_batch(batch, batch.y)
+                preds.append(batch_preds)
                 r2scores.append(r2_score(batch.y.detach().cpu(), batch_preds.detach().cpu()))
                 losses.append(loss)
             test_loss = torch.tensor(losses).mean().item()
             test_r2score = np.mean(r2scores)
+            preds = torch.cat(preds, dim=-1)
             print(
-                f"test loss: {test_loss:.6f}, est r2score {test_r2score:.6f}"
+                f"test loss: {test_loss:.6f}, test r2score {test_r2score:.6f}"
             )
-
-            return test_loss, test_r2score
+            scores = {
+            "test_loss": test_loss,
+            "test r2score": test r2score,
+            }
+            self.save_scores(scores)
+            return test_loss, test_r2score, preds
         else:
             data = self.dataset.data.to(self.device)
             test_loss, preds = self._eval_batch(data, data.y, mask=data.test_mask)
@@ -188,6 +205,13 @@ class TrainModel(object):
             print(
                 f"Test loss: {test_loss:.4f}, test acc {test_acc:.4f}, balanced test acc {test_balanced_acc:.4f}, test f1 score {test_f1_score:.4f}"
             )
+            scores = {
+            "test_loss": test_loss,
+            "test_acc": test_acc,
+            "test_balanced_acc": test_balanced_acc,
+            "test_f1_score": test_f1_score,
+            }
+            self.save_scores(scores)
             return test_loss, test_acc, test_balanced_acc, test_f1_score, preds
 
     # Train model
@@ -331,6 +355,10 @@ class TrainModel(object):
         self.model.load_state_dict(state_dict)
         self.model.to(self.device)
 
+    def save_scores(self, scores):
+        with open(os.path.join(self.save_dir, f"{self.save_name}_scores.json"), "w") as f:
+            json.dump(scores, f)
+
 #  Main train function
 def train_gnn(args, args_group):
     fix_random_seed(args.seed)
@@ -346,44 +374,19 @@ def train_gnn(args, args_group):
         **dataset_params,
     )
     dataset.data.x = dataset.data.x.float()
-
-
+    dataset.data.y = dataset.data.y.squeeze().long()
     # get dataset args
-    args = get_data_args(dataset.data, args)
+    args = get_data_args(dataset, args)
 
-    if args.datatype.lower() == "binary" or args.datatype.lower() == "multiclass":
-        dataset_params["num_classes"] = len(np.unique(dataset.data.y.cpu().numpy())) #modify? +1
-        dataset.data.y = dataset.data.y.squeeze().long()
-    if args.datatype.lower() == "regression":
-        dataset_params["num_classes"] = 1
-        dataset.data.y = dataset.data.y
-    dataset_params["datatype"] = args.datatype
-    dataset_params["num_node_features"] = dataset.data.x.size(1)
-    if eval(args.graph_classification):
+    if eval(args.graph_classification) | eval(args.graph_regression):
         dataloader_params = {
             "batch_size": args.batch_size,
             "random_split_flag": eval(args.random_split_flag),
             "data_split_ratio": [args.train_ratio, args.val_ratio, args.test_ratio],
             "seed": args.seed,
         }
-    elif eval(args.graph_regression):
-        dataloader_params = {
-            "batch_size": args.batch_size,
-            "random_split_flag": eval(args.random_split_flag),
-            "data_split_ratio": [args.train_ratio, args.val_ratio, args.test_ratio],
-            "seed": args.seed,
-        }
-    print(args.graph_classification)
     # get model
-    if args.graph_classification == "True":
-        model = get_gnnNets(
-            dataset_params["num_node_features"], dataset_params["num_classes"], model_params, False,
-        )
-    elif args.graph_regression == "True":
-
-        model = get_gnnNets(
-            dataset_params["num_node_features"], dataset_params["num_classes"], model_params, True
-        )
+    model = get_gnnNets(args.num_node_features, args.num_classes, model_params, eval(args.graph_regression))
 
     # train model
     if eval(args.graph_classification):
@@ -417,10 +420,10 @@ def train_gnn(args, args_group):
             optimizer_params=args_group["optimizer_params"],
         )
     # test model
-    if args.graph_regression == "True":
-        _, _ = trainer.test()
+    if eval(args.graph_regression):
+        _, _, _ = trainer.test()
     else:
-        _, _, _, _ = trainer.test()
+        _, _, _, _, _ = trainer.test()
 
 
 if __name__ == "__main__":

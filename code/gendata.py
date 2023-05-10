@@ -9,9 +9,7 @@ import torch
 from torch.utils.data import random_split, Subset
 from torch_geometric.loader import DataLoader
 from dataset import (
-    MoleculeDataset,
     SynGraphDataset,
-    NCRealGraphDataset,
     PowerGrid
     )
 from torch import default_generator
@@ -27,20 +25,9 @@ def get_dataset(dataset_root, **kwargs):
 
     if dataset_name.lower() in list(PowerGrid.names.keys()):
         return PowerGrid(root=dataset_root, name=dataset_name, datatype=datatype)
-
-    elif dataset_name.lower() in list(NCRealGraphDataset.names.keys()):
-        dataset = NCRealGraphDataset(root=dataset_root, name=dataset_name)
-        dataset.process()
-        return dataset
-    
-    elif dataset_name.lower() in list(MoleculeDataset.names.keys()):
-        dataset = MoleculeDataset(root=dataset_root, name=dataset_name, **kwargs)
-        dataset.process()
-        return dataset
     
     elif dataset_name.lower() in list(SynGraphDataset.names.keys()):
         dataset = SynGraphDataset(root=dataset_root, name=dataset_name, **kwargs)
-        dataset.process()
         return dataset
     else:
         raise ValueError(f"{dataset_name} is not defined.")
@@ -74,21 +61,29 @@ def get_dataloader(
         num_train = int(data_split_ratio[0] * len(dataset))
         num_eval = int(data_split_ratio[1] * len(dataset))
         num_test = len(dataset) - num_train - num_eval
-
-
+        
         from functools import partial
 
-        train, eval, test = random_split(
-            dataset,
-            lengths=[num_train, num_eval, num_test],
-            generator=default_generator.manual_seed(seed),
-        )
-    #print(dataset.data)
+        lengths = [num_train, num_eval, num_test]
+        indices = randperm(sum(lengths), generator=default_generator.manual_seed(seed)).tolist()
+        train_indices = indices[:num_train]
+        dev_indices = indices[num_train : num_train + num_eval]
+        test_indices = indices[num_train + num_eval :]
+
+    train = Subset(dataset, train_indices)
+    eval = Subset(dataset, dev_indices)
+    test = Subset(dataset, test_indices)
+    
+    train_dataset = dataset[train_indices]
+    eval_dataset = dataset[dev_indices]
+    test_dataset = dataset[test_indices]
+
     dataloader = dict()
     dataloader["train"] = DataLoader(train, batch_size=batch_size, shuffle=True)
     dataloader["eval"] = DataLoader(eval, batch_size=batch_size, shuffle=False)
     dataloader["test"] = DataLoader(test, batch_size=batch_size, shuffle=False)
-    return dataloader
+    
+    return dataloader, train_dataset, eval_dataset, test_dataset
 
 
 

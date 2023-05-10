@@ -4,21 +4,15 @@
 
 import networkx as nx
 import numpy as np
-import torch
-from utils.plot_utils import plot_expl_nc
-from dataset.syn_utils.gengroundtruth import get_ground_truth
-from utils.gen_utils import list_to_dict
 from evaluate.mask_utils import mask_to_shape
 
 
-def get_explanation(data, edge_mask, top_acc, num_top_edges):
+def get_explanation_syn(data, edge_mask, num_top_edges, top_acc):
     """Create an explanation graph from the edge_mask.
-
     Args:
         data (Pytorch data object): the initial graph as Data object
         edge_mask (Tensor): the explanation mask
         top_acc (bool): if True, use the top_acc as the threshold for the edge_mask
-
     Returns:
         G_masked (networkx graph): explanatory subgraph
     """
@@ -78,3 +72,15 @@ def get_scores(G1, G2):
         f1_score = 2 * (precision * recall) / (precision + recall)
 
     return recall, precision, f1_score
+
+
+def get_best_scores(G1, G2_list):
+    R, P, F1 = [], [], []
+    for G2 in G2_list:
+        recall, precision, f1_score = get_scores(G1, G2)
+        R.append(recall)
+        P.append(precision)
+        F1.append(f1_score)
+    i_best = np.argmax(F1)
+    return R[i_best], P[i_best], F1[i_best]
+

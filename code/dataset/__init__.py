@@ -1,6 +1,4 @@
-from .mol_dataset import MoleculeDataset
-from .nc_real_dataset import NCRealGraphDataset
-from .syn_dataset import SynGraphDataset
-from .InMemoryPowerGridsDatasets import PowerGrid
+from .synthetic import SynGraphDataset
+from .powergrid import PowerGrid
 
-__all__ = ["PowerGrid"]
+__all__ = ["PowerGrid", "SynGraphDataset"]

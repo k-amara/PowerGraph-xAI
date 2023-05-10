@@ -33,9 +33,12 @@ def topk_edges_unique(edge_mask, edge_index, num_top_edges):
 
 
 def normalize_mask(x):
-    if (np.nanmax(x) - np.nanmin(x)) == 0:
+    if len(x) > 0 and not np.all(np.isnan(x)):
+        if (np.nanmax(x) - np.nanmin(x)) == 0:
+            return x
+        return (x - np.nanmin(x)) / (np.nanmax(x) - np.nanmin(x))
+    else:
         return x
-    return (x - np.nanmin(x)) / (np.nanmax(x) - np.nanmin(x))
 
 
 def normalize_all_masks(masks):
@@ -47,10 +50,11 @@ def normalize_all_masks(masks):
 def clean(masks):
     """Clean masks by removing NaN, inf and too small values and normalizing"""
     for i in range(len(masks)):
-        masks[i] = np.nan_to_num(masks[i], copy=True, nan=0.0, posinf=10, neginf=-10)
-        masks[i] = np.clip(masks[i], -10, 10)
-        masks[i] = normalize_mask(masks[i])
-        masks[i] = np.where(masks[i] < 0.01, 0, masks[i])
+        if (masks[i] is not None) and len(masks[i]) > 0:
+            masks[i] = np.nan_to_num(masks[i], copy=True, nan=0.0, posinf=10, neginf=-10)
+            masks[i] = np.clip(masks[i], -10, 10)
+            masks[i] = normalize_mask(masks[i])
+            masks[i] = np.where(masks[i] < 0.01, 0, masks[i])
     return masks
 
 
@@ -216,7 +220,7 @@ def mask_to_shape(mask, edge_index, num_top_edges):
     """Modify the mask by selecting only the num_top_edges edges with the highest mask value."""
     indices = topk_edges_unique(mask, edge_index, num_top_edges)
     unimportant_indices = [i for i in range(len(mask)) if i not in indices]
-    new_mask = mask.clone()
+    new_mask = mask.copy()
     new_mask[unimportant_indices] = 0
     return new_mask
 
