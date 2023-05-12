@@ -35,10 +35,10 @@ def identity(x: torch.Tensor, batch: torch.Tensor):
     return x
 
 
-def cat_max_sum(x, batch):
+def cat_max_sum(x, batch, default_num_nodes):
     node_dim = x.shape[-1]
-    num_node = 118
-
+    bs = max(torch.unique(batch)) + 1
+    num_node = int(x.shape[0] / bs)
     x = x.reshape(-1, num_node, node_dim)
     return torch.cat([x.max(dim=1)[0], x.sum(dim=1)], dim=-1)
 
@@ -213,6 +213,7 @@ class GNN_basic(GNNBase):
         # readout
         self.readout = model_params["readout"]
         self.readout_layer = GNNPool(self.readout)
+        #self.default_num_nodes = model_params["default_num_nodes"]
         self.get_layers()
         self.graph_regression = graph_regression
 
@@ -224,7 +225,8 @@ class GNN_basic(GNNBase):
             self.convs.append(NNConv(current_dim, self.hidden_dim))
             current_dim = self.hidden_dim
         # FC layers
-        self.mlps = nn.Linear(current_dim*2, self.output_dim)
+        mlp_dim = current_dim*2 if self.readout=='cat_max_sum' else current_dim
+        self.mlps = nn.Linear(mlp_dim, self.output_dim)
         return
 
     def forward(self, *args, **kwargs):
@@ -285,8 +287,8 @@ class GAT(GNN_basic):
             )
             current_dim = self.hidden_dim
         # FC layers
-        # Why current dim * 2?
-        self.mlps = nn.Linear(current_dim*2, self.output_dim)
+        mlp_dim = current_dim*2 if self.readout=='cat_max_sum' else current_dim
+        self.mlps = nn.Linear(mlp_dim, self.output_dim)
         return
         
 
@@ -357,7 +359,8 @@ class GIN(GNN_basic):
             )
             current_dim = self.hidden_dim
         # FC layers
-        self.mlps = nn.Linear(current_dim*2, self.output_dim)
+        mlp_dim = current_dim*2 if self.readout=='cat_max_sum' else current_dim
+        self.mlps = nn.Linear(mlp_dim, self.output_dim)
         return
 
 
@@ -386,5 +389,6 @@ class TRANSFORMER(GNN_basic): #uppercase
             current_dim = self.hidden_dim
 
         # FC layers
-        self.mlps = nn.Linear(current_dim*2, self.output_dim)
+        mlp_dim = current_dim*2 if self.readout=='cat_max_sum' else current_dim
+        self.mlps = nn.Linear(mlp_dim, self.output_dim)
         return

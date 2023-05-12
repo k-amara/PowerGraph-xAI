@@ -63,7 +63,6 @@ def main(args, args_group):
     'num_classes': args.num_classes,}
     print(info)
 
-
     if eval(args.graph_classification):
         dataloader_params = {
             "batch_size": args.batch_size,
