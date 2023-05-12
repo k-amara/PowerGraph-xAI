@@ -114,55 +114,18 @@ def main(args, args_group):
 if __name__ == "__main__":
     parser, args = arg_parse()
     args = get_graph_size_args(args)
-
-    if args.dataset_name=="ba_2motifs":
-        (
-            args.groundtruth,
-            args.graph_classification,
-            args.num_layers,
-            args.hidden_dim,
-            args.num_epochs,
-            args.lr,
-            args.weight_decay,
-            args.dropout,
-            args.readout,
-            args.batch_size,
-            args.unseen
-        ) = ("True", "True", 3, 20, 300, 0.001, 0.0000, 0.0, "max", 200, "False")
-
-    elif args.dataset_name.startswith(tuple(["uk", "ieee24"])):
-        (
-            args.groundtruth,
-            args.graph_classification,
-            args.num_layers,
-            args.hidden_dim,
-            args.num_epochs,
-            args.lr,
-            args.weight_decay,
-            args.dropout,
-            args.readout,
-            args.batch_size,
-            args.gamma,
-            args.milestones,
-            args.num_early_stop,
-            args.unseen
-        ) = ("True", "True", 3, 32, 200, 0.001, 0.0000, 0.0, "max", 128, 0.5, [70, 90, 120, 170], 50, "False")
-    elif args.dataset_name.startswith(tuple(["ieee39", "ieee118"])):
-        (
-            args.groundtruth,
-            args.graph_classification,
-            args.num_layers,
-            args.hidden_dim,
-            args.num_epochs,
-            args.lr,
-            args.weight_decay,
-            args.dropout,
-            args.readout,
-            args.batch_size,
-            args.gamma,
-            args.milestones,
-            args.unseen
-        ) = ("True", "True", 3, 32, 100, 0.001, 0.0000, 0.0, "max", 128, 0.1, [30, 50, 75], "False")
+    
+    # Get the absolute path to the parent directory of the current file
+    parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    # Load the config file
+    config_path = os.path.join(parent_dir, "configs", "dataset.yaml")
+    # read the configuration file
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+    # loop through the config and add any values to the parser as arguments
+    for key, value in config[args.dataset_name].items():
+        setattr(args, key, value)
+    
     args_group = create_args_group(parser, args)
     main(args, args_group)
 
