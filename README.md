@@ -49,6 +49,8 @@ We do not use GCN model for the PowerGraph datasets since the graphs have edge a
 
 Make sure you have the dataset as per format. Models will be saved as per format (make sure you have the model folder)
 
+```
+.
 ├── code
 ├── dataset
 │ ├── processed
@@ -58,6 +60,7 @@ Make sure you have the dataset as per format. Models will be saved as per format
 | ├──ieee24
 | ├──ieee39
 | ├──uk
+```
 
 Remove the for loop in train_gnn.py if running for a specific **--hidden_dim** and **num_layers**.
 
