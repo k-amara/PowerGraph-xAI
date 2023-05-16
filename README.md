@@ -82,10 +82,15 @@ python3 code/main.py --dataset_name [dataset-name] --model_name [gnn-model] --ex
 ```
 
 We have the main arguments to control namely
+
 **--model_name**: transformer / gin / gat
+
 **--datatype**: multiclass
+
 **--dataset_name**: uk_mc / ieee24_mc / ieee39_mc
+
 **--explainer_name**: random / sa / ig / gradcam / occlusion / basic_gnnexplainer / gnnexplainer / subgraphx / pgmexplainer / pgexplainer / graphcfe
 
 Default args:
+
 **--explained_target**: 0 - Only Category A powergrids are explained (DNS>0 and Cascading failure)

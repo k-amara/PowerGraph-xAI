@@ -132,3 +132,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# folder
+logs/
+error/
+.git/
+
+*.sh
