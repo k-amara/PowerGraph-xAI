@@ -1,7 +1,9 @@
 # Benchmarking GNN datasets for PowerGrids
+Traditional methods for simulating cascading failures in power grids are computationally expensive and use historical blackout datasets that are scarce and incomplete. To address this limitation, we propose to use machine learning models, specifically Graph Neural Networks (GNNs), to instantly detect cascading failures from the pre-outage state of the system. The lack of publicly available GNN datasets for power grid applications has motivated us to develop a new graph dataset. This dataset, designed for graph-level tasks and ranging in size from small to medium, fills a gap in the OGB taxonomy for graph datasets. It is tailored to the society domain, where no public GNN graph property prediction datasets are currently available. Furthermore, we provide explainability masks. Currently, no real graph dataset for graph-level application can be used to benchmark explainability models.
 
-We generated the InMemoryDatasets in UK, IEEE24, IEEE39 formats. We use **InMemoryDataset** class of Pytorch Geometric for the dataloader part.
-_Description of the contribution of this GitHub repo..._
+
+With the InMemoryDatasets Class, we generate the GNN datasets for the UK, IEEE24, IEEE39, IEEE118 power grids. We use **InMemoryDataset** class of Pytorch Geometric.
+
 
 ## Installation
 
@@ -16,7 +18,7 @@ Load every additional packages:
 pip install -r requirements.txt
 ```
 
-## Dataset desciption
+## Dataset description
 
 | Dataset    |     Name     | Description                    |
 | ---------- | :----------: | ------------------------------ |
@@ -26,7 +28,7 @@ pip install -r requirements.txt
 | IEEE-118   |  `ieee118`   | IEEE-118 (Powergrid dataset)   |
 | UK         |     `uk`     | UK (Powergrid dataset)         |
 
-_Describe more the datasets and how they were obtained_
+We have created a graph dataset that models cascading failure events, which are the main cause of blackouts in power grids. To generate a comprehensive dataset for different power grids, we used a physics-based cascading failure model called Cascades. This model simulates how failures propagate in the IEEE24, IEEE39, IEEE118 and UK power grids. The output of the model is the final demand not being served (DNS). Our dataset consists of a large set of power grid states, representing the operating conditions before an outage, and is linked to an initial triggering outage (one or more failed elements). Each power grid state is represented as a graph, with a graph-level label assigned based on the results of the physics-based model. The dataset is designed for various graph-level tasks, such as multi-class classification, binary classification, and regression. Bus and branches are the elements of a power grid, buses include loads and generators which represent the nodes of the graph, while branches include transmission lines and transformers which represent the edges of the graph. We provide three features per node: net active power, net apparent power and voltage magnitude. While the features per edge are four: active power flow, reactive power flow, line reactance and line rating. 
 
 ## GNN Benchmarking
 
