@@ -17,6 +17,25 @@ Load every additional packages:
 pip install -r requirements.txt
 ```
 
+## Prerequisites and data structure
+
+To reproduce the results presented in the paper, download the following compressed data from [here](https://figshare.com/articles/dataset/PowerGraph/22820534) (~1.8GB, when uncompressed):
+
+```bash
+wget -O data.tar.gz "https://figshare.com/ndownloader/files/40571123"
+tar -xf data.tar.gz
+```
+
+Each dataset folder contains the following files:
+
+- `blist.mat`: branch list also called edge order or edge index
+- `of_bi.mat`: binary classification labels
+- `of_reg.mat`: regression labels
+- `of_mc.mat`: multi-class labels
+- `Bf.mat`: node feature matrix
+- `Ef.mat`: edge feature matrix
+- `exp.mat`: groundtruth explanation
+
 ## Dataset description
 
 | Dataset    |     Name     | Description                    |
