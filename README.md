@@ -118,3 +118,7 @@ We have the main arguments to control namely
 Default args:
 
 **--explained_target**: 0 - Only Category A powergrids are explained (DNS>0 and Cascading failure)
+
+## License
+
+This work is licensed under a CC BY-SA 4.0 license.
