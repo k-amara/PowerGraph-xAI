@@ -8,6 +8,7 @@ import torch
 import shutil
 import warnings
 import numpy as np
+import json
 from torch.optim import Adam
 from utils.parser_utils import (
     arg_parse,
@@ -32,8 +33,8 @@ class TrainModel(object):
         model,
         dataset,
         device,
-        graph_classification=False,
-        graph_regression=True,
+        task="regression",
+        task_target="graph",
         save_dir=None,
         save_name="model",
         **kwargs,
@@ -42,32 +43,31 @@ class TrainModel(object):
         self.dataset = dataset  # train_mask, eval_mask, test_mask
         self.loader = None
         self.device = device
-        self.graph_classification = graph_classification
-        self.graph_regression = graph_regression
-        #self.node_classification = not graph_classification
+        self.task = task
+        self.task_target = task_target
         self.optimizer = None
         self.save = save_dir is not None
         self.save_dir = save_dir
         self.save_name = save_name
         check_dir(self.save_dir)
 
-        if self.graph_classification or self.graph_regression:
+        if self.task_target=="graph":
             dataloader_params = kwargs.get("dataloader_params")
-            self.loader = get_dataloader(dataset, **dataloader_params)
+            self.loader,_,_,_ = get_dataloader(dataset, **dataloader_params)
 
     def __loss__(self, logits, labels):
-        if self.graph_classification:
+        if self.task.endswith("classification"):
             return F.nll_loss(logits, labels)
-        elif self.graph_regression:
+        elif self.task == "regression":
             return F.mse_loss(logits, labels)
 
     # Get the loss, apply optimizer, backprop and return the loss
 
     def _train_batch(self, data, labels):
         logits = self.model(data=data)
-        if self.graph_classification:
+        if self.task.endswith("classification"):
             loss = self.__loss__(logits, labels)
-        elif self.graph_regression:
+        elif self.task == "regression":
             loss = self.__loss__(logits, labels)
         else:
             loss = self.__loss__(logits[data.train_mask], labels[data.train_mask])           
@@ -81,11 +81,11 @@ class TrainModel(object):
     def _eval_batch(self, data, labels, **kwargs):
         self.model.eval()
         logits = self.model(data)
-        if self.graph_classification:
+        if self.task.endswith("classification"):
             loss = self.__loss__(logits, labels)
             loss = loss.item()
             preds = logits.argmax(-1)
-        elif self.graph_regression:
+        elif self.task == "regression":
             loss = self.__loss__(logits, labels)
             loss = loss.item()
             preds = logits
@@ -104,7 +104,7 @@ class TrainModel(object):
         self.model.to(self.device)
         self.model.eval()
 
-        if self.graph_classification:
+        if self.task.endswith("classification"):
             losses, accs, balanced_accs, f1_scores = [], [], [], []
             for batch in self.loader["eval"]:
                 batch = batch.to(self.device)
@@ -121,7 +121,7 @@ class TrainModel(object):
                 f"Test loss: {eval_loss:.4f}, test acc {eval_acc:.4f}, balanced test acc {eval_balanced_acc:.4f}, test f1 score {eval_f1_score:.4f}"
             )
             return eval_loss, eval_acc, eval_balanced_acc, eval_f1_score
-        elif self.graph_regression:
+        elif self.task == "regression":
             losses, r2scores = [], []
             for batch in self.loader["eval"]:
                 batch = batch.to(self.device)
@@ -150,7 +150,7 @@ class TrainModel(object):
         self.model.load_state_dict(state_dict)
         self.model = self.model.to(self.device)
         self.model.eval()
-        if self.graph_classification:
+        if self.task.endswith("classification"):
             losses, preds, accs, balanced_accs, f1_scores = [], [], [], [], []
             for batch in self.loader["test"]:
                 batch = batch.to(self.device)
@@ -176,7 +176,7 @@ class TrainModel(object):
             }
             self.save_scores(scores)
             return test_loss, test_acc, test_balanced_acc, test_f1_score, preds
-        elif self.graph_regression:
+        elif self.task == "regression":
             losses, r2scores, preds = [], [], []
             for batch in self.loader["test"]:
                 batch = batch.to(self.device)
@@ -192,7 +192,7 @@ class TrainModel(object):
             )
             scores = {
             "test_loss": test_loss,
-            "test r2score": test r2score,
+            "test r2score": test_r2score,
             }
             self.save_scores(scores)
             return test_loss, test_r2score, preds
@@ -216,7 +216,7 @@ class TrainModel(object):
 
     # Train model
     def train(self, train_params=None, optimizer_params=None):
-        if self.graph_classification:
+        if self.task.endswith("classification"):
             num_epochs = train_params["num_epochs"]
             num_early_stop = train_params["num_early_stop"]
             #milestones = train_params["milestones"] # needed if using a different LR scheduler
@@ -238,7 +238,7 @@ class TrainModel(object):
             for epoch in range(num_epochs):
                 is_best = False
                 self.model.train()
-                if self.graph_classification:
+                if self.task.endswith("classification"):
                     losses = []
                     for batch in self.loader["train"]:
                         batch = batch.to(self.device)
@@ -274,7 +274,7 @@ class TrainModel(object):
                 if self.save:
                     self.save_model(is_best, recording=recording)
         
-        elif self.graph_regression:
+        elif self.task == "regression":
             num_epochs = train_params["num_epochs"]
             num_early_stop = train_params["num_early_stop"]
             # milestones = train_params["milestones"] # needed if using a different LR scheduler
@@ -296,7 +296,7 @@ class TrainModel(object):
             for epoch in range(num_epochs):
                 is_best = False
                 self.model.train()
-                if self.graph_regression:
+                if self.task == "regression":
                     losses = []
                     for batch in self.loader["train"]:
                         batch = batch.to(self.device)
@@ -363,7 +363,6 @@ class TrainModel(object):
 def train_gnn(args, args_group):
     fix_random_seed(args.seed)
     device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
-    print(f"dev {device}")
 
     dataset_params = args_group["dataset_params"]
     model_params = args_group["model_params"]
@@ -378,7 +377,7 @@ def train_gnn(args, args_group):
     # get dataset args
     args = get_data_args(dataset, args)
 
-    if eval(args.graph_classification) | eval(args.graph_regression):
+    if args.task.endswith("classification") | (args.task == "regression"):
         dataloader_params = {
             "batch_size": args.batch_size,
             "random_split_flag": eval(args.random_split_flag),
@@ -386,31 +385,19 @@ def train_gnn(args, args_group):
             "seed": args.seed,
         }
     # get model
-    model = get_gnnNets(args.num_node_features, args.num_classes, model_params, eval(args.graph_regression))
+    model = get_gnnNets(args.num_node_features, args.num_classes, model_params, args.task)
 
     # train model
-    if eval(args.graph_classification):
-        trainer = TrainModel(
-            model=model,
-            dataset=dataset,
-            device=device,
-            graph_classification=eval(args.graph_classification),
-            graph_regression=eval(args.graph_regression),
-            save_dir=os.path.join(args.model_save_dir, args.dataset_name),
-            save_name=f"{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}h",
-            dataloader_params=dataloader_params,
-        )
-    else:
-        trainer = TrainModel(
-            model=model,
-            dataset=dataset,
-            device=device,
-            graph_classification=eval(args.graph_classification),
-            graph_regression=eval(args.graph_regression),
-            save_dir=os.path.join(args.model_save_dir, args.dataset_name),
-            save_name=f"{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}h",
-            dataloader_params=dataloader_params,
-        ) 
+    trainer = TrainModel(
+        model=model,
+        dataset=dataset,
+        device=device,
+        task=args.task,
+        task_target = args.task_target,
+        save_dir=os.path.join(args.model_save_dir, args.dataset_name, args.task_target),
+        save_name=f"{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}h",
+        dataloader_params=dataloader_params,
+    ) 
 
     if Path(os.path.join(trainer.save_dir, f"{trainer.save_name}_best.pth")).is_file():
         trainer.load_model()
@@ -420,7 +407,7 @@ def train_gnn(args, args_group):
             optimizer_params=args_group["optimizer_params"],
         )
     # test model
-    if eval(args.graph_regression):
+    if args.task == "regression":
         _, _, _ = trainer.test()
     else:
         _, _, _, _, _ = trainer.test()

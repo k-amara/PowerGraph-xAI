@@ -32,9 +32,9 @@ class PowerGrid(InMemoryDataset):
         "ieee39": ["ieee39", "Ieee39", "IEEE39", None],
         "ieee118": ["ieee118", "Ieee118", "IEEE118", None],
             }
-    def __init__(self, root, name, datatype='Binary', transform=None, pre_transform=None, pre_filter=None):
+    def __init__(self, root, name, task='binary_classification', transform=None, pre_transform=None, pre_filter=None):
         
-        self.datatype = datatype.lower()
+        self.task = task.lower()
         self.name = name.lower()
         self.raw_path = os.path.join(root, 'raw')
         self.pre_filter = pre_filter
@@ -86,10 +86,10 @@ class PowerGrid(InMemoryDataset):
         path = os.path.join(self.raw_dir, 'blist.mat')
         edge_order = mat73.loadmat(path)
         edge_order = torch.tensor(edge_order["bList"] - 1)
-        # load output binary classification labels
+        # load output binary_classification classification labels
         path = os.path.join(self.raw_dir, 'of_bi.mat')
         of_bi = mat73.loadmat(path)
-        # load output binary regression labels
+        # load output binary_classification regression labels
         path = os.path.join(self.raw_dir, 'of_reg.mat')
         of_reg = mat73.loadmat(path)
         # load output mc labels
@@ -144,12 +144,11 @@ class PowerGrid(InMemoryDataset):
             edge_iw = torch.cat((edge_iw, edge_iwr), 0)
             edge_iw = edge_iw.t().contiguous().to(device)
 
-            data_type = self.datatype.lower()
-            if self.datatype.lower() == 'binary':
+            if self.task.lower() == 'binary_classification':
                 ydata = torch.tensor(of_bi[i][0], dtype=torch.float, device=device).view(1, -1)
-            if self.datatype.lower() == 'regression':
+            if self.task.lower() == 'regression':
                 ydata = torch.tensor(of_reg[i], dtype=torch.float, device=device).view(1, -1)
-            if self.datatype.lower() == 'multiclass':
+            if self.task.lower() == 'multi_classification':
                 #do argmax
                 ydata = torch.tensor(np.argmax(of_mc[i][0]), dtype=torch.float, device=device).view(1, -1)
                 # ydata = torch.tensor(of_mc[i][0], dtype=torch.int, device=device).view(1, -1)

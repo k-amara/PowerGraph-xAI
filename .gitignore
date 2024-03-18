@@ -136,5 +136,10 @@ dmypy.json
 logs/
 error/
 .git/
+data/
+model/
+results/
+mask/
+clutils/
 
 *.sh

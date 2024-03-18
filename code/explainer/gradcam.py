@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from captum._utils.common import (
     _format_additional_forward_args,
-    _format_input,
+    #_format_input,
     _format_output,
 )
 from captum._utils.gradient import (

@@ -14,7 +14,7 @@ from torch.autograd import Variable
 from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx, to_dense_adj
 
-from code.utils.math_utils import sigmoid
+from utils.math_utils import sigmoid
 from utils.gen_utils import (
     filter_existing_edges,
     get_cmn_edges,

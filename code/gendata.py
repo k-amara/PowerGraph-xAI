@@ -20,11 +20,11 @@ from utils.parser_utils import arg_parse, get_graph_size_args
 # if dataset exists, load it, otherwise generate it
 def get_dataset(dataset_root, **kwargs):
     dataset_name = kwargs.get("dataset_name")
-    datatype = kwargs.get("datatype")
+    task = kwargs.get("task")
     print(f"Loading {dataset_name} dataset...")
 
     if dataset_name.lower() in list(PowerGrid.names.keys()):
-        return PowerGrid(root=dataset_root, name=dataset_name, datatype=datatype)
+        return PowerGrid(root=dataset_root, name=dataset_name, task=task)
     
     elif dataset_name.lower() in list(SynGraphDataset.names.keys()):
         dataset = SynGraphDataset(root=dataset_root, name=dataset_name, **kwargs)
@@ -65,7 +65,7 @@ def get_dataloader(
         from functools import partial
 
         lengths = [num_train, num_eval, num_test]
-        indices = randperm(sum(lengths), generator=default_generator.manual_seed(seed)).tolist()
+        indices = torch.randperm(sum(lengths), generator=default_generator.manual_seed(seed)).tolist()
         train_indices = indices[:num_train]
         dev_indices = indices[num_train : num_train + num_eval]
         test_indices = indices[num_train + num_eval :]
