@@ -114,7 +114,7 @@ def main(args, args_group):
 if __name__ == "__main__":
     parser, args = arg_parse()
     args = get_graph_size_args(args)
-    
+    print('args:', args)
     # Get the absolute path to the parent directory of the current file
     parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     # Load the config file

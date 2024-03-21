@@ -283,9 +283,6 @@ def arg_parse():
     )
 
     parser.set_defaults(
-        datadir="data",  # io_parser
-        logdir="log",
-        ckptdir="ckpt",
         focus="phenomenon",
         mask_nature="hard",
         dataset_name="ba_2motifs",

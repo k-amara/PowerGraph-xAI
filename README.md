@@ -70,7 +70,7 @@ Make sure you have the dataset as per format. Models will be saved as per format
 
 ```
 .
-├── code
+├── src
 ├── dataset
 │ ├── processed
 │ ├── raw
@@ -89,15 +89,24 @@ The models will be saved in **model** directory
 
 **Graph Classification Tasks**
 
-| Explainer            | Paper                                                                                                                       |
-| :------------------- | :-------------------------------------------------------------------------------------------------------------------------- |
-| Occlusion            | [Visualizing and understanding convolutional networks](https://arxiv.org/pdf/1311.2901.pdf)                                 |
-| SA                   | [Explainability Techniques for Graph Convolutional Networks](https://arxiv.org/pdf/1905.13686.pdf)                          |
-| Grad-CAM             | [Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization](https://arxiv.org/pdf/1610.02391.pdf)    |
-| Integrated Gradients | [Axiomatic Attribution for Deep Networks](https://arxiv.org/pdf/1703.01365.pdf)                                             |
-| GNNExplainer         | [GNNExplainer: Generating Explanations for Graph Neural Networks](https://arxiv.org/pdf/1903.03894.pdf)                     |
-| SubgraphX            | [On Explainability of Graph Neural Networks via Subgraph Exploration](https://arxiv.org/pdf/2102.05152.pdf)                 |
-| PGM-Explainer        | [PGM-Explainer: Probabilistic Graphical Model Explanations for Graph Neural Networks](https://arxiv.org/pdf/2010.05788.pdf) |
+| Non-generative Explainer | Paper                                                                               |
+| :----------------------- | :---------------------------------------------------------------------------------- |
+| Occlusion                | Visualizing and understanding convolutional networks                                |
+| SA                       | Explainability Techniques for Graph Convolutional Networks.                         |
+| Grad-CAM                 | Explainability Methods for Graph Convolutional Neural Networks.                     |
+| Integrated Gradients     | Axiomatic Attribution for Deep Networks                                             |
+| GNNExplainer             | GNNExplainer: Generating Explanations for Graph Neural Networks                     |
+| SubgraphX                | On Explainability of Graph Neural Networks via Subgraph Exploration                 |
+| PGM-Explainer            | PGM-Explainer: Probabilistic Graphical Model Explanations for Graph Neural Networks |
+
+| Generative Explainer | Paper                                                                             |
+| :------------------- | :-------------------------------------------------------------------------------- |
+| PGExplainer          | Parameterized Explainer for Graph Neural Network                                  |
+| RCExplainer          | Reinforced Causal Explainer for Graph Neural Networks                             |
+| GSAT                 | Interpretable and Generalizable Graph Learning via Stochastic Attention Mechanism |
+| GraphCFE             | CLEAR: Generative Counterfactual Explanations on Graphs                           |
+| DiffExplainer        | D4Explainer (not published)                                                       |
+| GflowExplainer       | DAG Matters! GFlowNets Enhanced Explainer For Graph Neural Networks `             |
 
 **Run explainability methods**
 
@@ -113,7 +122,7 @@ We have the main arguments to control namely
 
 **--dataset_name**: uk_mc / ieee24_mc / ieee39_mc
 
-**--explainer_name**: random / sa / ig / gradcam / occlusion / basic_gnnexplainer / gnnexplainer / subgraphx / pgmexplainer / pgexplainer / graphcfe
+**--explainer_name**: random / sa / ig / gradcam / occlusion / basic_gnnexplainer / gnnexplainer / subgraphx / pgmexplainer / pgexplainer / graphcfe / rcexplainer / gsat / diffexplainer / gflowexplainer
 
 Default args:
 
