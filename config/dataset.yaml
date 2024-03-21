@@ -1,6 +1,7 @@
 ba_2motifs:
   groundtruth: "True"
-  graph_classification: "True"
+  task_target: "node"
+  task: "binary_classification"
   num_layers: 3
   hidden_dim: 20
   num_epochs: 300
@@ -8,12 +9,16 @@ ba_2motifs:
   weight_decay: 0.0000
   dropout: 0.0
   readout: "max"
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
   batch_size: 200
   unseen: "False"
 
 uk:
   groundtruth: "True"
-  graph_classification: "True"
+  task_target: "graph"
+  task: "binary_classification"
   num_layers: 3
   hidden_dim: 32
   num_epochs: 200
@@ -21,6 +26,12 @@ uk:
   weight_decay: 0.0000
   dropout: 0.0
   readout: "max"
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
   batch_size: 128
   gamma: 0.5
   milestones: [70, 90, 120, 170]
@@ -29,7 +40,8 @@ uk:
 
 ieee24:
   groundtruth: "True"
-  graph_classification: "True"
+  task_target: "graph"
+  task: "multi_classification"
   num_layers: 3
   hidden_dim: 32
   num_epochs: 200
@@ -37,6 +49,9 @@ ieee24:
   weight_decay: 0.0000
   dropout: 0.0
   readout: "max"
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
   batch_size: 128
   gamma: 0.5
   milestones: [70, 90, 120, 170]
@@ -45,7 +60,8 @@ ieee24:
 
 ieee39:
   groundtruth: "True"
-  graph_classification: "True"
+  task_target: "graph"
+  task: "multi_classification"
   num_layers: 3
   hidden_dim: 32
   num_epochs: 100
@@ -53,6 +69,9 @@ ieee39:
   weight_decay: 0.0000
   dropout: 0.0
   readout: "max"
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
   batch_size: 128
   gamma: 0.1
   milestones: [30, 50, 75]
@@ -60,7 +79,8 @@ ieee39:
 
 ieee118:
   groundtruth: "True"
-  graph_classification: "True"
+  task_target: "graph"
+  task: "multi_classification"
   num_layers: 3
   hidden_dim: 32
   num_epochs: 100
@@ -68,6 +88,9 @@ ieee118:
   weight_decay: 0.0000
   dropout: 0.0
   readout: "max"
+  train_ratio: 0.8
+  val_ratio: 0.1
+  test_ratio: 0.1
   batch_size: 128
   gamma: 0.1
   milestones: [30, 50, 75]
