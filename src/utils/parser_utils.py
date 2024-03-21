@@ -13,7 +13,7 @@ def fix_random_seed(seed):
 
 
 def get_graph_size_args(args):
-    if not eval(args.graph_classification):
+    if args.task_target == "node":
         if args.dataset_name == "ba_house":
             args.num_top_edges = 6
             args.num_shapes = 80
@@ -49,9 +49,9 @@ def get_graph_size_args(args):
 
 def get_data_args(dataset, args):
     assert dataset.data.y.ndim == 1 # make sure it is a one class problem
-    if args.datatype.lower() == "binary" or args.datatype.lower() == "multiclass":
+    if args.task.lower().endswith("classification"):
         args.num_classes = max(np.unique(dataset.data.y.cpu().numpy()))+1
-    if args.datatype.lower() == "regression":
+    if args.task.lower().endswith("regression"):
         args.num_classes = 1
     args.num_node_features = dataset.data.x.size(1)
     
@@ -59,7 +59,7 @@ def get_data_args(dataset, args):
         dataset.data.edge_attr = torch.unsqueeze(dataset.data.edge_attr, 1)
     
     args.edge_dim = dataset.data.edge_attr.size(1)
-    # args.datatype = "regression" if args.num_classes==1 else "binary" if args.num_classes==2 else "multiclass"
+    # args.task = "regression" if args.num_classes==1 else "binary" if args.num_classes==2 else "multiclass"
     return args
 
 
@@ -127,7 +127,7 @@ def arg_parse():
 
     # dataset parameters
     parser_dataset_params = parser.add_argument_group("dataset_params")
-    parser_dataset_params.add_argument("--dataset_name", type=str)
+    parser_dataset_params.add_argument("--dataset_name", type=str, default="ieee24")
     parser_dataset_params.add_argument(
         "--seed", help="random seed", type=int, default=0
     )
@@ -140,7 +140,8 @@ def arg_parse():
     parser_dataset_params.add_argument(
         "--num_basis", help="number of nodes in the base graph", type=int
     )
-    parser_dataset_params.add_argument("--datatype", help="the type of classification (binary or multiclass) for the powergrid datasets (uk, ieee24, ieee39, ieee118)", type=str, default="binary")
+    parser_dataset_params.add_argument("--task_target", help="the nature of the entity to explain (graph, node)", type=str, default="graph")
+    parser_dataset_params.add_argument("--task", help="the type of task (binary_classification or multi_classification, regression) for the powergrid datasets (uk, ieee24, ieee39, ieee118)", type=str, default="multi_classification")
     parser_dataset_params.add_argument("--num_classes", help="output_dim", type=int)
     parser_dataset_params.add_argument(
         "--num_node_features", help="input_dim", type=int
@@ -185,12 +186,7 @@ def arg_parse():
         "--model_name",
         help="[gat, gcn, gin, transformer]. GCN can only be used for data with no or 1D edge features.",
         type=str,
-    )
-    parser_model_params.add_argument(
-        "--graph_classification",
-        help="graph or node classification",
-        type=str,
-        default="True",
+        default="transformer",
     )
     parser_model_params.add_argument("--hidden_dim", type=int, help="Hidden dimension")
 
@@ -211,7 +207,7 @@ def arg_parse():
 
     # explainer parameters
     parser_explainer_params = parser.add_argument_group("explainer_params")
-    parser_explainer_params.add_argument("--explainer_name", help="explainer", type=str)
+    parser_explainer_params.add_argument("--explainer_name", help="explainer", type=str, default="sa")
     parser_explainer_params.add_argument(
         "--groundtruth",
         type=str,
@@ -221,9 +217,10 @@ def arg_parse():
         "--focus",
         help="target is groudtruth label or GNN initial prediction",
         type=str,
+        default="model",
     )
     parser_explainer_params.add_argument(
-        "--mask_nature", help="Soft or hard mask", type=str
+        "--mask_nature", help="Soft or hard mask", type=str, default="soft"
     )
     parser_explainer_params.add_argument(
         "--pred_type",
@@ -241,6 +238,7 @@ def arg_parse():
         "--num_explained_y",
         help="number of explained entities (graphs or nodes)",
         type=int,
+        default=10,
     )
     parser_explainer_params.add_argument(
         "--time_limit",
@@ -281,6 +279,7 @@ def arg_parse():
         type=float,
         help="Constraining edge mask entropy: mask is uniform or discriminative",
     )
+<<<<<<< HEAD:src/utils/parser_utils.py
 
     parser.set_defaults(
         focus="phenomenon",
@@ -305,6 +304,8 @@ def arg_parse():
         edge_size=0.005,
         explainer_name="gnnexplainer",
     )
+=======
+>>>>>>> 10bd3ae749584c526805ae68a517eb45dfe59c64:code/utils/parser_utils.py
     args, unknown = parser.parse_known_args()
     return parser, args
 

@@ -11,9 +11,14 @@ from copy import deepcopy
 from captum.attr import IntegratedGradients, Saliency
 from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx, to_dense_adj
+<<<<<<< HEAD:src/explainer/graph_explainer.py
 from code.explainer.gnnlrp import GNN_LRP
 from code.explainer.pgexplainer import PGExplainer
 from code.utils.math_utils import sigmoid
+=======
+
+from utils.math_utils import sigmoid
+>>>>>>> 10bd3ae749584c526805ae68a517eb45dfe59c64:code/explainer/graph_explainer.py
 from utils.gen_utils import (
     filter_existing_edges,
     get_cmn_edges,

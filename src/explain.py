@@ -31,14 +31,12 @@ from utils.parser_utils import (
 )
 from utils.io_utils import check_dir
 from utils.gen_utils import list_to_dict
-from dataset.mutag_utils.gengroundtruth import get_ground_truth_mol
 from dataset.syn_utils.gengroundtruth import get_ground_truth_syn
 from evaluate.accuracy import (
     get_explanation_syn,
     get_scores,
 )
 from evaluate.mask_utils import mask_to_shape, clean, control_sparsity, get_mask_properties
-from explainer.node_explainer import *
 from explainer.graph_explainer import *
 from pathlib import Path
 from torch_geometric.data import DataLoader
@@ -67,8 +65,9 @@ class Explain(object):
             check_dir(self.save_dir)
 
         self.explainer_params = explainer_params
-        self.graph_classification = eval(explainer_params["graph_classification"])
-        self.task = "_graph" if self.graph_classification else "_node"
+        self.task = explainer_params["task"]
+        self.task_target = explainer_params["task_target"]
+
 
         self.list_test_idx = list_test_idx
         self.explainer_name = explainer_params["explainer_name"]
@@ -104,7 +103,7 @@ class Explain(object):
             edge_mask = torch.Tensor(edge_masks[i]).to(self.device)
             graph = (
                 self.dataset[self.explained_y[i]]
-                if self.graph_classification
+                if self.task.endswith("classification")
                 else self.dataset.data
             )
             if (self.dataset_name.startswith(tuple(["ba", "tree"]))) & (self.dataset_name != "ba_2motifs"):
@@ -163,7 +162,7 @@ class Explain(object):
             edge_mask = torch.Tensor(edge_masks[i]).to(self.device)
             graph = (
                 self.dataset[self.explained_y[i]]
-                if self.graph_classification
+                if self.task.endswith("classification")
                 else self.dataset.data
             )
             if (self.dataset_name.startswith(tuple(["ba", "tree"]))) & (self.dataset_name != "ba_2motifs"):
@@ -231,7 +230,7 @@ class Explain(object):
         return fidelity_scores
 
     def eval(self, edge_masks, node_feat_masks):
-        related_preds = eval("self.related_pred" + self.task)(
+        related_preds = eval("self.related_pred_" + self.task_target)(
             edge_masks, node_feat_masks
         )
         if self.groundtruth:
@@ -430,7 +429,7 @@ class Explain(object):
         )
 
     def compute_mask(self):
-        self.explain_function = eval("explain_" + self.explainer_name + self.task)
+        self.explain_function = eval("explain_" + self.explainer_name + "_" + self.task_target)
         print("Computing masks using " + self.explainer_name + " explainer.")
         if (self.save_dir is not None) and (Path(os.path.join(self.save_dir, self.save_name)).is_file()):
             (
@@ -450,7 +449,7 @@ class Explain(object):
             )
             for explained_y_idx in init_explained_y:
                 edge_mask, node_feat_mask, duration_seconds = eval(
-                    "self._compute" + self.task
+                    "self._compute_" + self.task_target
                 )(explained_y_idx)
                 if (edge_mask is not None) and len(edge_mask)>0:
                     edge_masks.append(edge_mask)
@@ -483,7 +482,7 @@ class Explain(object):
             idx = self.explained_y[i]
             edge_index = (
                 self.dataset[idx].edge_index
-                if self.graph_classification
+                if self.task.endswith("classification")
                 else self.data.edge_index
             )
             if self.mask_transformation == "topk":
@@ -501,7 +500,7 @@ class Explain(object):
         return new_masks
 
     def _get_explained_y(self):
-        if self.graph_classification:
+        if self.task.endswith("classification"):
             dataloader = DataLoader(
                 self.dataset,
                 batch_size=len(self.dataset),
@@ -614,7 +613,7 @@ def explain_main(dataset, model, device, args, unseen=False):
         "seed": args.seed,
         "dataset": args.dataset_name,
         "model": args.model_name,
-        "datatype": args.datatype,
+        "task": args.task,
         "explainer": args.explainer_name,
         "focus": args.focus,
         "mask_nature": args.mask_nature,

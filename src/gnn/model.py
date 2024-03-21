@@ -13,7 +13,7 @@ from torch_geometric.data.batch import Batch
 from torch_geometric.nn.glob import global_mean_pool, global_add_pool, global_max_pool
 
 
-def get_gnnNets(input_dim, output_dim, model_params, graph_regression):
+def get_gnnNets(input_dim, output_dim, model_params, task):
     if model_params["model_name"].lower() in [
         "base",
         "gcn",
@@ -23,11 +23,11 @@ def get_gnnNets(input_dim, output_dim, model_params, graph_regression):
     ]:
         GNNmodel = model_params["model_name"].upper()
         return eval(GNNmodel)(
-            input_dim=input_dim, output_dim=output_dim, model_params=model_params, graph_regression=graph_regression
+            input_dim=input_dim, output_dim=output_dim, model_params=model_params, task=task
         )
     else:
         raise ValueError(
-            f"GNN name should be gcn, gat, gin or transformer " f"and {model_params.gnn_name} is not defined."
+            f"GNN name should be gcn, gat, gin or transformer " f"and {model_params.model_name} is not defined."
         )
 
 
@@ -67,7 +67,8 @@ class GNNPool(nn.Module):
 # GNN models
 ##
 class GNNBase(nn.Module):
-    def __init__(self):
+    def __init__(self, edge_dim):
+        self.edge_dim = edge_dim
         super(GNNBase, self).__init__()
 
     def _argsparse(self, *args, **kwargs):
@@ -201,7 +202,7 @@ class GNN_basic(GNNBase):
         input_dim,
         output_dim,
         model_params,
-        graph_regression,
+        task,
     ):
         edge_dim = model_params["edge_dim"]
         super(GNN_basic, self).__init__(edge_dim)
@@ -215,7 +216,7 @@ class GNN_basic(GNNBase):
         self.readout_layer = GNNPool(self.readout)
         #self.default_num_nodes = model_params["default_num_nodes"]
         self.get_layers()
-        self.graph_regression = graph_regression
+        self.task = task
 
     def get_layers(self):
         # GNN layers
@@ -235,14 +236,14 @@ class GNN_basic(GNNBase):
         emb = self.get_emb(*args, **kwargs)
         x = self.readout_layer(emb, batch)
         self.logits = self.mlps(x)
-        if self.graph_regression:
+        if self.task.endswith("regression"):
             return self.logits
         else:
             self.probs = F.log_softmax(self.logits, dim=-1)
             return self.probs
 
     def loss(self, pred, label):
-        if self.graph_regression:
+        if self.task.endswith("regression"):
             return F.mse_loss(pred, label)
         else:
             return F.cross_entropy(pred, label)
@@ -252,7 +253,7 @@ class GNN_basic(GNNBase):
 
         for layer in self.convs:
             x = layer(x, edge_index, edge_attr*edge_weight[:,None]) 
-            nn.LeakyReLU()
+            x = F.relu(x) #nn.LeakyReLU()
             x = F.dropout(x, self.dropout, training=self.training)
         return x
 
@@ -268,14 +269,23 @@ class GNN_basic(GNNBase):
     def get_pred_label(self, pred):
         return pred.argmax(dim=1)
 
+    def get_prob(self, *args, **kwargs):
+        _, _, _, _, batch = self._argsparse(*args, **kwargs)
+        # node embedding for GNN
+        emb = self.get_emb(*args, **kwargs)
+        x = self.readout_layer(emb, batch)
+        self.logits = self.mlps(x)
+        return F.softmax(self.logits, dim=1)
+
+
 
 class GAT(GNN_basic):
-    def __init__(self, input_dim, output_dim, model_params, graph_regression):
+    def __init__(self, input_dim, output_dim, model_params, task):
         super().__init__(
             input_dim,
             output_dim,
             model_params,
-            graph_regression,
+            task,
         )
 
     def get_layers(self):
@@ -299,13 +309,13 @@ class GCN(GNN_basic):
         input_dim,
         output_dim,
         model_params,
-        graph_regression,
+        task,
     ):
         super().__init__(
             input_dim,
             output_dim,
             model_params,
-            graph_regression,
+            task,
         )
 
     def get_layers(self):
@@ -334,13 +344,13 @@ class GIN(GNN_basic):
         input_dim,
         output_dim,
         model_params,
-        graph_regression,
+        task,
     ):
         super().__init__(
             input_dim,
             output_dim,
             model_params,
-            graph_regression,
+            task,
         )
 
     def get_layers(self):
@@ -370,13 +380,13 @@ class TRANSFORMER(GNN_basic): #uppercase
         input_dim,
         output_dim,
         model_params,
-        graph_regression,
+        task,
     ):
         super().__init__(
             input_dim,
             output_dim,
             model_params,
-            graph_regression,
+            task,
         )
 
     def get_layers(self):

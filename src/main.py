@@ -2,8 +2,6 @@ import os
 from explain import explain_main
 import torch
 import numpy as np
-import pandas as pd
-import random
 from gnn.model import get_gnnNets
 from train_gnn import TrainModel
 from gendata import get_dataset
@@ -15,7 +13,7 @@ from utils.parser_utils import (
     get_graph_size_args,
 )
 from pathlib import Path
-from torch_geometric.utils import degree
+import yaml
 
 
 def main(args, args_group):
@@ -31,7 +29,7 @@ def main(args, args_group):
     )
     dataset.data.x = dataset.data.x.float()
     dataset.data.y = dataset.data.y.squeeze().long()
-    args = get_data_args(dataset.data, args)
+    args = get_data_args(dataset, args)
     model_params["edge_dim"] = args.edge_dim
 
     # For GraphCFE
@@ -59,11 +57,11 @@ def main(args, args_group):
     'num_ef':args.edge_dim, 
     'avg_num_nodes': np.mean([data.num_nodes for data in dataset]), 
     'avg_num_edges': np.mean([data.edge_index.shape[1] for data in dataset]),
-    'avg_degree': np.mean([degree(data.edge_index[0]).mean().item() for data in dataset]),
+    #'avg_degree': np.mean([degree(data.edge_index[0]).mean().item() for data in dataset]),
     'num_classes': args.num_classes,}
     print(info)
 
-    if eval(args.graph_classification):
+    if args.task_target=="graph":
         dataloader_params = {
             "batch_size": args.batch_size,
             "random_split_flag": eval(args.random_split_flag),
@@ -71,30 +69,19 @@ def main(args, args_group):
             "seed": args.seed,
         }
 
-    model = get_gnnNets(args.num_node_features, argsnum_classes, model_params, eval(args.graph_regression))
+    model = get_gnnNets(args.num_node_features, args.num_classes, model_params, args.task)
 
-    if eval(args.graph_classification):
-        trainer = TrainModel(
-            model=model,
-            dataset=dataset,
-            device=device,
-            graph_classification=eval(args.graph_classification),
-            graph_regression=eval(args.graph_regression),
-            save_dir=os.path.join(args.model_save_dir, args.dataset_name),
-            save_name=f"{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}h",
-            dataloader_params=dataloader_params,
-        )
-    else:
-        trainer = TrainModel(
-            model=model,
-            dataset=dataset,
-            device=device,
-            graph_classification=eval(args.graph_classification),
-            graph_regression=eval(args.graph_regression),
-            save_dir=os.path.join(args.model_save_dir, args.dataset_name),
-            save_name=f"{args.model_name}_{args.datatype}_{args.num_layers}l_{args.hidden_dim}h",
-            dataloader_params=dataloader_params,
-        )
+    
+    trainer = TrainModel(
+        model=model,
+        dataset=dataset,
+        device=device,
+        task=args.task,
+        task_target = args.task_target,
+        save_dir=os.path.join(args.model_save_dir, args.dataset_name, args.task_target),
+        save_name=f"{args.model_name}_{args.task}_{args.num_layers}l_{args.hidden_dim}h",
+        dataloader_params=dataloader_params,
+    )
     if Path(os.path.join(trainer.save_dir, f"{trainer.save_name}_best.pth")).is_file():
         trainer.load_model()
     else:
@@ -103,7 +90,7 @@ def main(args, args_group):
             optimizer_params=args_group["optimizer_params"],
         )
     # test model
-    if eval(args.graph_regression):
+    if args.task == "regression":
         _, _, _ = trainer.test()
     else:
         _, _, _, _, _ = trainer.test()
@@ -118,7 +105,7 @@ if __name__ == "__main__":
     # Get the absolute path to the parent directory of the current file
     parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     # Load the config file
-    config_path = os.path.join(parent_dir, "configs", "dataset.yaml")
+    config_path = os.path.join(parent_dir, "config", "dataset.yaml")
     # read the configuration file
     with open(config_path, "r") as f:
         config = yaml.safe_load(f)
