@@ -279,7 +279,6 @@ def arg_parse():
         type=float,
         help="Constraining edge mask entropy: mask is uniform or discriminative",
     )
-<<<<<<< HEAD:src/utils/parser_utils.py
 
     parser.set_defaults(
         focus="phenomenon",
@@ -299,13 +298,12 @@ def arg_parse():
         dropout=0,
         readout="identity",
         weight_decay=5e-4,
-        model_name="trasnformer",
+        model_name="transformer",
         edge_ent=1.0,
         edge_size=0.005,
         explainer_name="gnnexplainer",
     )
-=======
->>>>>>> 10bd3ae749584c526805ae68a517eb45dfe59c64:code/utils/parser_utils.py
+
     args, unknown = parser.parse_known_args()
     return parser, args
 
