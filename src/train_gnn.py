@@ -51,9 +51,9 @@ class TrainModel(object):
         self.save_name = save_name
         check_dir(self.save_dir)
 
-        if self.task_target=="graph":
-            dataloader_params = kwargs.get("dataloader_params")
-            self.loader,_,_,_ = get_dataloader(dataset, **dataloader_params)
+        #if self.task_target=="graph":
+        dataloader_params = kwargs.get("dataloader_params")
+        self.loader,_,_,_ = get_dataloader(dataset, **dataloader_params)
 
     def __loss__(self, logits, labels):
         if self.task.endswith("classification"):

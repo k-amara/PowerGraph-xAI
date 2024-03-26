@@ -61,13 +61,12 @@ def main(args, args_group):
     'num_classes': args.num_classes,}
     print(info)
 
-    if args.task_target=="graph":
-        dataloader_params = {
-            "batch_size": args.batch_size,
-            "random_split_flag": eval(args.random_split_flag),
-            "data_split_ratio": [args.train_ratio, args.val_ratio, args.test_ratio],
-            "seed": args.seed,
-        }
+    dataloader_params = {
+        "batch_size": args.batch_size,
+        "random_split_flag": eval(args.random_split_flag),
+        "data_split_ratio": [args.train_ratio, args.val_ratio, args.test_ratio],
+        "seed": args.seed,
+    }
 
     model = get_gnnNets(args.num_node_features, args.num_classes, model_params, args.task)
 
