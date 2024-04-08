@@ -85,9 +85,7 @@ class Explain(object):
             self.num_top_edges = explainer_params["num_top_edges"]
 
     def get_ground_truth(self, **kwargs):
-        if self.dataset_name == "mutag":
-            G_true_list = get_ground_truth_mol(self.dataset_name)
-        elif self.dataset_name.startswith(["ba", "tree"]):
+        if self.dataset_name.startswith(["ba", "tree"]):
             G_true, role, true_edge_mask = get_ground_truth_syn(
                 kwargs["explained_idx"], self.data, self.dataset_name
             )

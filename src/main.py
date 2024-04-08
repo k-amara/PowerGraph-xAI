@@ -14,11 +14,28 @@ from utils.parser_utils import (
 )
 from pathlib import Path
 import yaml
+import torch_scatter
 
 
 def main(args, args_group):
     fix_random_seed(args.seed)
+
+
+    # Check Torch version
+    print(f"Torch version: {torch.__version__}")
+
+    # Check Torch Scatter version
+    print(f"Torch Scatter version: {torch_scatter.__version__}")
+
+    # Check CUDA availability and version
+    print(f"CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        print(f"CUDA version: {torch.version.cuda}")
+    print(torch.cuda.get_device_name(0))  # Get the name of the GPU device
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    print('device:', device)
 
     dataset_params = args_group["dataset_params"]
     model_params = args_group["model_params"]
