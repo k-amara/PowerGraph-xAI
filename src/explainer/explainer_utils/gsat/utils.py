@@ -3,7 +3,6 @@ import os
 import random
 import numpy as np
 import networkx as nx
-from rdkit import Chem
 import matplotlib.pyplot as plt
 from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx, sort_edge_index

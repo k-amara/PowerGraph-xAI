@@ -14,8 +14,6 @@ from torch_geometric.loader import DataLoader
 from torch_geometric.utils import subgraph, is_undirected
 from ogb.graphproppred import Evaluator
 from sklearn.metrics import roc_auc_score
-from rdkit import Chem
-
 from explainer.explainer_utils.gsat import Writer, Criterion, MLP, save_checkpoint, load_checkpoint, get_preds, get_lr, set_seed, process_data
 from explainer.explainer_utils.gsat import get_local_config_name, write_stat_from_metric_dicts, reorder_like, init_metric_dict
 
@@ -289,9 +287,6 @@ class GSAT(nn.Module):
                 x = np.linspace(0, 1, num_nodes)
                 y = np.ones_like(x)
                 coor = np.stack([x, y], axis=1)
-            elif self.dataset_name == 'ogbg_molhiv':
-                element_idxs = {k: int(v+1) for k, v in enumerate(viz_set[i].x[:, 0])}
-                mol_type = {k: Chem.PeriodicTable.GetElementSymbol(Chem.GetPeriodicTable(), int(v)) for k, v in element_idxs.items()}
             elif self.dataset_name == 'mnist':
                 raise NotImplementedError
 

@@ -31,7 +31,7 @@ def main(args, args_group):
     print(f"CUDA available: {torch.cuda.is_available()}")
     if torch.cuda.is_available():
         print(f"CUDA version: {torch.version.cuda}")
-    print(torch.cuda.get_device_name(0))  # Get the name of the GPU device
+        print(torch.cuda.get_device_name(0))  # Get the name of the GPU device
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
