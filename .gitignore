@@ -136,15 +136,7 @@ dmypy.json
 logs/
 error/
 .git/
-<<<<<<< HEAD
 clutils/
 config_euler/
-=======
-data/
-model/
-results/
-mask/
-clutils/
->>>>>>> 10bd3ae749584c526805ae68a517eb45dfe59c64
 
 *.sh
