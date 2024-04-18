@@ -544,7 +544,8 @@ class TargetedGNNExplainer(GNNExplainer):
 
         # all nodes belong to same graph
         batch = torch.zeros(x.shape[0], dtype=int, device=x.device)
-
+        print('x device:', x.device)
+        print('edge_index device:', edge_index.device)
         # Get the initial prediction.
         if target is not None:
             with torch.no_grad():
@@ -580,6 +581,11 @@ class TargetedGNNExplainer(GNNExplainer):
                 h = x * self.node_feat_mask.sigmoid()
             else:
                 h = x
+            print('h device:', h.device)
+            print('x device:', x.device)
+            print('self.node_feat_mask device:', self.node_feat_mask.device)
+            print('edge_index device:', edge_index.device)
+            print('edge_attr device:', self.edge_mask.device)
             out = self.model(h, edge_index, self.edge_mask.sigmoid(), batch)
             if self.return_type == "regression":
                 loss = self.__loss__(-1, out, prediction)

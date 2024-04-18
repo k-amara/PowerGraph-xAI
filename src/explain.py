@@ -612,6 +612,7 @@ def explain_main(dataset, model, device, args, unseen=False):
         "dataset": args.dataset_name,
         "model": args.model_name,
         "task": args.task,
+        "task_target": args.task_target,
         "explainer": args.explainer_name,
         "focus": args.focus,
         "mask_nature": args.mask_nature,
@@ -633,6 +634,9 @@ def explain_main(dataset, model, device, args, unseen=False):
         # Evaluate scores of the masks
         top_accuracy_scores, accuracy_scores, fidelity_scores = explainer.eval(edge_masks, node_feat_masks)
         eval_scores = {**top_accuracy_scores, **accuracy_scores, **fidelity_scores}
+        print('iteration:', i)
+        print('params_transf:', params_transf)
+        print('eval_scores:', eval_scores)
         scores = {
             key: value
             for key, value in sorted(
@@ -645,7 +649,7 @@ def explain_main(dataset, model, device, args, unseen=False):
         if i == 0:
             results = pd.DataFrame({k: [v] for k, v in scores.items()})
         else:
-            results = results.append(scores, ignore_index=True)
+            results = pd.concat([results, pd.DataFrame([scores])], ignore_index=True)
     ### Save results ###
     save_path = os.path.join(
         args.result_save_dir, args.dataset_name, args.explainer_name

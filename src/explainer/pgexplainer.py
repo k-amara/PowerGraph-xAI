@@ -412,15 +412,18 @@ class PGExplainer(nn.Module):
         """
         node_idx = kwargs.get("node_idx")
         nodesize = embed.shape[0]
+        col, row = edge_index
+        row = row.to(self.device)
+        col = col.to(self.device)
+        embed = embed.to(self.device)
+        print('embed device:', embed.device)
+        print('device:', self.device)
+        print('col device:', col.device)
+        f1 = embed[col]
+        f2 = embed[row]
         if self.explain_graph:
-            col, row = edge_index
-            f1 = embed[col]
-            f2 = embed[row]
             f12self = torch.cat([f1, f2], dim=-1)
         else:
-            col, row = edge_index
-            f1 = embed[col]
-            f2 = embed[row]
             self_embed = embed[node_idx].repeat(f1.shape[0], 1)
             f12self = torch.cat([f1, f2, self_embed], dim=-1)
 

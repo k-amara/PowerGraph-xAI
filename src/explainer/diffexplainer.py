@@ -19,7 +19,7 @@ def diff_parse_args(parser):
     parser.add_argument('--root', type=str, default="results/distribution/",
                         help='Result directory.')
     
-    parser.add_argument('--task', type=str, default="gc")
+    parser.add_argument('--pred_task', type=str, default="gc")
     parser.add_argument('--normalization', type=str, default="instance")
     parser.add_argument('--verbose', type=int, default=10)
     parser.add_argument('--num_layers_diff', type=int, default=6)
@@ -74,14 +74,14 @@ def loss_func_bce(score_list, groundtruth, sigma_list, mask, device, sparsity_le
     loss = torch.mean(loss_matrix)
     return loss
 
-def loss_cf_exp(gnn_model, graph_batch, score, y_pred, y_exp, full_edge, mask, ds, task="nc"):
+def loss_cf_exp(gnn_model, graph_batch, score, y_pred, y_exp, full_edge, mask, ds, pred_task="nc"):
     score_tensor = torch.stack(score, dim=0).squeeze(-1)
     score_tensor = torch.mean(score_tensor, dim=0).view(-1,1)
     mask_bool = mask.bool().view(-1,1)
     edge_mask_full = score_tensor[mask_bool]
     assert edge_mask_full.size(0) == full_edge.size(1)
     criterion = torch.nn.NLLLoss()
-    if task == "nc":
+    if pred_task == "nc":
         output_prob_cont, output_repr_cont = gnn_model(x=graph_batch.x, edge_index=full_edge, edge_mask=edge_mask_full) #mapping=graph_batch.mapping)
     else:
         output_prob_cont = gnn_model(x=graph_batch.x, edge_index=full_edge,
@@ -303,13 +303,13 @@ class DiffExplainer(Explainer):
                     score.append(score_batch)
                     masks.append(mask)
                 graph_batch_sub = tensor2graph(graph, score, mask)
-                y_pred, y_exp = self.gnn_pred(graph,  graph_batch_sub, gnn_model, ds=args.dataset_name, task=args.task)
+                y_pred, y_exp = self.gnn_pred(graph,  graph_batch_sub, gnn_model, ds=args.dataset_name, pred_task=args.pred_task)
                 full_edge_index = gen_full(graph.batch, mask)
                 score_b = torch.cat(score, dim=0).squeeze(-1).to(self.device) # [len(sigma_list)*bsz, N, N]
                 masktens = torch.cat(masks, dim=0).to(self.device) # [len(sigma_list)*bsz, N, N]
                 modif_r = self.sparsity(score, train_adj_b, mask)
                 remain_r = self.sparsity(score, train_adj_b, train_adj_b)
-                loss_cf, fid_drop, acc_cf = loss_cf_exp(gnn_model, graph, score, y_pred, y_exp, full_edge_index, mask, ds=args.dataset_name, task=args.task)
+                loss_cf, fid_drop, acc_cf = loss_cf_exp(gnn_model, graph, score, y_pred, y_exp, full_edge_index, mask, ds=args.dataset_name, pred_task=args.pred_task)
                 loss_dist = loss_func_bce(score_b, train_ori_adj_b, sigma_list, masktens, device=self.device, sparsity_level=args.sparsity_level)
                 loss = loss_dist + args.alpha_cf * loss_cf
                 loss.backward()
@@ -387,13 +387,13 @@ class DiffExplainer(Explainer):
                             masks.append(mask)
                             score.append(score_batch)
                         graph_batch_sub = tensor2graph(graph, score, mask)
-                        y_pred, y_exp = self.gnn_pred(graph, graph_batch_sub, gnn_model, ds=args.dataset_name, task=args.task)
+                        y_pred, y_exp = self.gnn_pred(graph, graph_batch_sub, gnn_model, ds=args.dataset_name, pred_task=args.pred_task)
                         full_edge_index = gen_full(graph.batch, mask)
                         score_b = torch.cat(score, dim=0).squeeze(-1).to(self.device)
                         masktens = torch.cat(masks, dim=0).to(self.device)
                         modif_r = self.sparsity(score, test_adj_b, mask)
                         reamin_r = self.sparsity(score, test_adj_b, test_adj_b)
-                        loss_cf, fid_drop, acc_cf = loss_cf_exp(gnn_model, graph, score, y_pred,y_exp, full_edge_index, mask, ds=args.dataset_name, task=args.task)
+                        loss_cf, fid_drop, acc_cf = loss_cf_exp(gnn_model, graph, score, y_pred,y_exp, full_edge_index, mask, ds=args.dataset_name, pred_task=args.pred_task)
                         loss_dist = loss_func_bce(score_b, test_ori_adj_b, sigma_list, masktens, device=self.device, sparsity_level=args.sparsity_level)
                         loss = loss_dist + args.alpha_cf * loss_cf
                         test_losses.append(loss.item())
@@ -468,9 +468,9 @@ class DiffExplainer(Explainer):
         mr = np.mean(mr_list)
         return mr
 
-    def gnn_pred(self, graph_batch, graph_batch_sub, gnn_model, ds, task):
+    def gnn_pred(self, graph_batch, graph_batch_sub, gnn_model, ds, pred_task):
         gnn_model.eval()
-        if task == "nc":
+        if pred_task == "nc":
             output_prob = gnn_model(graph_batch) #mapping=graph_batch.mapping
             output_prob_sub = gnn_model(graph_batch_sub) #mapping=graph_batch_sub.mapping
         else:
@@ -510,12 +510,12 @@ class DiffExplainer(Explainer):
             score.append(score_batch)
         graph_batch_sub = tensor2graph(graph, score, mask)
         full_edge_index = gen_full(graph.batch, mask)
-        modif_r = sparsity(score, test_adj_b, mask)
+        modif_r = self.sparsity(score, test_adj_b, mask)
         score_tensor = torch.stack(score, dim=0).squeeze(-1)  # len_sigma_list, bsz, N, N]
         score_tensor = torch.mean(score_tensor, dim=0).view(-1, 1)  # [bsz*N*N,1]
         mask_bool = mask.bool().view(-1, 1)
         edge_mask_full = score_tensor[mask_bool]
-        if args.task == "nc":
+        if args.pred_task == "nc":
             output_prob_cont, output_repr_cont = self.model.get_pred_explain(x=graph.x, edge_index=full_edge_index,
                                                                                 edge_mask=edge_mask_full,
                                                                                 mapping=graph.mapping)
@@ -524,7 +524,7 @@ class DiffExplainer(Explainer):
                                                                                 edge_index=full_edge_index,
                                                                                 edge_mask=edge_mask_full,
                                                                                 batch=graph.batch)
-        y_ori = graph.y if args.task == "gc" else graph.self_y
+        y_ori = graph.y if args.pred_task == "gc" else graph.self_y
         y_exp = output_prob_cont.argmax(dim=-1)
         edge_index_diff = graph_batch_sub.edge_index
         return edge_index_diff, y_ori, y_exp, modif_r

@@ -3,7 +3,6 @@ import numpy as np
 import random
 import torch
 import torch.nn.functional as F
-import random
 import time
 import dill
 import argparse
@@ -22,6 +21,7 @@ from utils.io_utils import write_to_json
 from gnn.model import GCNConv, GATConv, GINEConv, TransformerConv
 
 from explainer.gnnexplainer import TargetedGNNExplainer
+from explainer.pgexplainer import PGExplainer
 from explainer.pgmexplainer import Graph_Explainer
 from explainer.subgraphx import SubgraphX
 from explainer.gradcam import GraphLayerGradCam
@@ -75,6 +75,21 @@ def explain_random_graph(model, data, target, device, **kwargs):
     edge_mask = np.random.uniform(size=data.edge_index.shape[1])
     node_feat_mask = np.random.uniform(size=data.x.shape[1])
     return edge_mask.astype("float"), node_feat_mask.astype("float")
+
+##### Groundtruth Explanations #####
+
+def explain_truth_graph(model, data, target, device, **kwargs):
+    if not eval(kwargs["groundtruth"]):
+        return None, None
+    else: 
+        return data.edge_mask.float().cpu().detach().numpy(), None
+    
+def explain_inverse_graph(model, data, target, device, **kwargs):
+    if not eval(kwargs["groundtruth"]):
+        return None, None
+    else: 
+        data
+        return (1-data.edge_mask.float()).cpu().detach().numpy(), None
 
 
 def explain_sa_graph(model, data, target, device, **kwargs):

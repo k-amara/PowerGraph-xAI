@@ -259,9 +259,9 @@ class Graph_Explainer:
                     latent = 0
                 sample.append(latent)
 
-            X_perturb_torch = torch.tensor(X_perturb, dtype=torch.float)
+            X_perturb_torch = torch.tensor(X_perturb, dtype=torch.float).to(self.device)
             pred_perturb_torch = self.model(
-                X_perturb_torch, self.edge_index, self.edge_attr
+                X_perturb_torch, self.edge_index.to(self.device), self.edge_attr.to(self.device)
             ).cpu()
             soft_pred_perturb = np.asarray(
                 softmax(np.asarray(pred_perturb_torch[0].data))

@@ -205,9 +205,12 @@ def from_sparse_adj_to_edge_index(adj):
 
 
 def from_adj_to_edge_index_torch(adj):
-    adj_sparse = adj.to_sparse()
+    adj_sparse = csr_matrix(adj)
+    print('adj_sparse', adj_sparse)
     edge_index = adj_sparse.indices().to(dtype=torch.long)
     edge_attr = adj_sparse.values()
+    print('edge_index', edge_index)
+    print('edge_attr', edge_attr)
     # if adj.requires_grad:
     # edge_index.requires_grad = True
     # edge_attr.requires_grad = True
