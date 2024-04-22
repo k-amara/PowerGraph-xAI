@@ -76,10 +76,10 @@ class GSAT(nn.Module):
         self.criterion = Criterion(num_class, multi_label)
 
     def __loss__(self, att, clf_logits, clf_labels, epoch):
+        clf_labels = clf_labels.to(self.device)
         if clf_labels.ndim == 1:
             num_classes = clf_logits.size(1)
-            clf_labels = clf_labels.to(self.device)
-            clf_labels = torch.eye(num_classes)[clf_labels].to(self.device)
+            clf_labels = torch.eye(num_classes, device=self.device)[clf_labels].to(self.device)
         pred_loss = self.criterion(clf_logits, clf_labels)
 
         r = self.fix_r if self.fix_r else self.get_r(self.decay_interval, self.decay_r, epoch, final_r=self.final_r, init_r=self.init_r)
@@ -247,12 +247,13 @@ class GSAT(nn.Module):
 
     def get_precision_at_k(self, att, exp_labels, k, batch, edge_index):
         precision_at_k = []
+        exp_labels, att = exp_labels.to(self.device), att.to(self.device)
         for i in range(batch.max()+1):
             nodes_for_graph_i = batch == i
-            edges_for_graph_i = nodes_for_graph_i[edge_index[0]] & nodes_for_graph_i[edge_index[1]]
+            edges_for_graph_i = (nodes_for_graph_i[edge_index[0]] & nodes_for_graph_i[edge_index[1]]).to(self.device)
             labels_for_graph_i = exp_labels[edges_for_graph_i]
             mask_log_logits_for_graph_i = att[edges_for_graph_i]
-            precision_at_k.append(labels_for_graph_i[np.argsort(-mask_log_logits_for_graph_i)[:k]].sum().item() / k)
+            precision_at_k.append(labels_for_graph_i[np.argsort(-mask_log_logits_for_graph_i.detach().cpu().numpy())[:k]].sum().item() / k)
         return precision_at_k
 
     def get_viz_idx(self, test_set, dataset_name):
