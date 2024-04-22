@@ -416,9 +416,6 @@ class PGExplainer(nn.Module):
         row = row.to(self.device)
         col = col.to(self.device)
         embed = embed.to(self.device)
-        print('embed device:', embed.device)
-        print('device:', self.device)
-        print('col device:', col.device)
         f1 = embed[col]
         f2 = embed[row]
         if self.explain_graph:
@@ -445,7 +442,10 @@ class PGExplainer(nn.Module):
         self.__set_masks__(x, edge_index, edge_mask)
 
         # the model prediction with edge mask
-        logits = self.model(x, edge_index)
+        if 'edge_attr' in kwargs:
+            logits = self.model(x, edge_index, kwargs['edge_attr'])
+        else:
+            logits = self.model(x, edge_index)
         probs = F.softmax(logits, dim=-1)
 
         self.__clear_masks__()

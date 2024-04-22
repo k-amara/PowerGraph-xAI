@@ -283,7 +283,7 @@ def arg_parse():
     parser.set_defaults(
         dataset_name="ieee24",
         focus="phenomenon",
-        mask_nature="soft",
+        mask_nature="hard",
         groundtruth= "True",
         task_target="graph",
         task="multi_classification",

@@ -77,11 +77,8 @@ class GSAT(nn.Module):
 
     def __loss__(self, att, clf_logits, clf_labels, epoch):
         if clf_labels.ndim == 1:
-            num_classes = clf_logits.size(1).to(self.device)
+            num_classes = clf_logits.size(1)
             clf_labels = clf_labels.to(self.device)
-            print('clf_labels device:', clf_labels.device)
-            print('num_classes device:', num_classes.device)
-            print('device:', self.device)
             clf_labels = torch.eye(num_classes)[clf_labels].to(self.device)
         pred_loss = self.criterion(clf_logits, clf_labels)
 

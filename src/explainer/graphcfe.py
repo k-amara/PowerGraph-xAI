@@ -54,6 +54,9 @@ class GraphCFE(nn.Module):
         graph_rep = self.graph_model(features, adj)  # n x num_node x h_dim
         graph_rep = self.graph_pooling(graph_rep, self.graph_pool_type)  # n x h_dim
         #graph_rep = self.graph_norm(graph_rep)
+        print("graph_rep", graph_rep.size())
+        print("y_cf", y_cf.size())
+        print("y_cf", y_cf)
         z_mu = self.encoder_mean(torch.cat((graph_rep, y_cf), dim=1))
         z_logvar = self.encoder_var(torch.cat((graph_rep, y_cf), dim=1))
         return z_mu, z_logvar
@@ -189,7 +192,7 @@ def distance_feature(feat_1, feat_2):
     return output
 
 def distance_graph_prob(adj_1, adj_2_prob):
-    dist = F.binary_cross_entropy(adj_2_prob, adj_1)
+    dist = F.binary_cross_entropy(adj_2_prob, (adj_1>0.5).float())
     return dist
 
 def proximity_feature(feat_1, feat_2, type='cos'):
@@ -327,7 +330,9 @@ def compute_counterfactual(dataset, data, metrics, y_cf, model, pred_model, devi
 
     eval_results = evaluate(eval_params)
 
+    print("adj_reconst_binary", adj_reconst_binary)
     edge_index_cf, edge_attr_cf = from_adj_to_edge_index_torch(adj_reconst_binary[0])
+    print("edge_index_cf", edge_index_cf.size())
     edge_mask = get_cf_edge_mask(edge_index_cf, data.edge_index)
     # The explanation is the edges that are not counterfactual edges
     return eval_results, edge_mask
