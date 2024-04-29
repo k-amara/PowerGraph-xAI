@@ -517,9 +517,13 @@ class Explain(object):
             else:
                 raise ValueError("pred_type must be correct, wrong or mix.")
             list_idx = self.list_test_idx
+            if self.num_explained_y is not None:
+                size = min(len(list_idx), self.num_explained_y, len(self.dataset))
+            else:
+                size = min(len(list_idx), len(self.dataset))
             explained_y = np.random.choice(
                 list_idx,
-                size=min(len(list_idx), self.num_explained_y, len(self.dataset)),
+                size=size,
                 replace=False,
             )
         else:
@@ -535,8 +539,12 @@ class Explain(object):
             else:
                 raise ValueError("pred_type must be correct, wrong or mix.")
             print("Number of explanable entities: ", len(list_idx))
+            if self.num_explained_y is not None:
+                size = min(len(list_idx), self.num_explained_y, len(self.dataset))
+            else:
+                size = min(len(list_idx), len(self.dataset))
             explained_y = np.random.choice(
-                list_idx, size=min(self.num_explained_y, len(list_idx), self.data.num_nodes), replace=False
+                list_idx, size=size, replace=False
             )
         print("Number of explained entities: ", len(explained_y))
         return explained_y
