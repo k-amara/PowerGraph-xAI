@@ -398,7 +398,7 @@ class TRANSFORMER(GNN_basic): #uppercase
         current_dim = self.input_dim
         for l in range(self.num_layers):
             self.convs.append(
-                   TransformerConv(current_dim, self.hidden_dim, heads=4, edge_dim=self.edge_dim, concat=False)
+                   TransformerConv(current_dim, self.hidden_dim, heads=2, edge_dim=self.edge_dim, concat=False)
                    )
             current_dim = self.hidden_dim
 
