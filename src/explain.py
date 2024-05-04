@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import warnings
 import json
+from csv import DictWriter
 from evaluate.fidelity import (
     fidelity_acc,
     fidelity_acc_inv,
@@ -629,6 +630,30 @@ def explain_main(dataset, model, device, args, unseen=False):
         "device": str(device),
     }
 
+
+    ### Save results ###
+    save_path = os.path.join(
+        args.result_save_dir, args.dataset_name, args.explainer_name
+    )
+    os.makedirs(save_path, exist_ok=True)
+    unseen_str = "_unseen" if unseen else ""
+    name_path = os.path.join(
+        save_path,
+        "results{}_{}_{}_{}_{}_{}_{}_target{}_{}_{}_{}.csv".format(
+            unseen_str,
+            args.dataset_name,
+            args.model_name,
+            args.explainer_name,
+            args.focus,
+            args.mask_nature,
+            args.num_explained_y,
+            args.explained_target,
+            args.pred_type,
+            str(device),
+            args.seed
+        ),
+    )
+
     if (edge_masks is None) or (not edge_masks):
         raise ValueError("Edge masks are None")
     params_lst = eval(explainer.transf_params)
@@ -656,30 +681,11 @@ def explain_main(dataset, model, device, args, unseen=False):
         }
         if i == 0:
             results = pd.DataFrame({k: [v] for k, v in scores.items()})
+            results.to_csv(name_path, index=False)
         else:
             results = pd.concat([results, pd.DataFrame([scores])], ignore_index=True)
-    ### Save results ###
-    save_path = os.path.join(
-        args.result_save_dir, args.dataset_name, args.explainer_name
-    )
-    os.makedirs(save_path, exist_ok=True)
-    unseen_str = "_unseen" if unseen else ""
-    results.to_csv(
-        os.path.join(
-            save_path,
-            "results{}_{}_{}_{}_{}_{}_{}_target{}_{}_{}_{}.csv".format(
-                unseen_str,
-                args.dataset_name,
-                args.model_name,
-                args.explainer_name,
-                args.focus,
-                args.mask_nature,
-                args.num_explained_y,
-                args.explained_target,
-                args.pred_type,
-                str(device),
-                args.seed
-            ),
-        )
-    )
+            with open(name_path, "a+", newline='') as f:
+                dict_writer = DictWriter(f, fieldnames=scores.keys())
+                dict_writer.writerow(scores)
+    
 
