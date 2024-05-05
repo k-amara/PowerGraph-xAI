@@ -138,5 +138,6 @@ error/
 .git/
 clutils/
 config_euler/
+figures/
 
 *.sh
