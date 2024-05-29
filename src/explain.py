@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import warnings
 import json
+from csv import DictWriter
 from evaluate.fidelity import (
     fidelity_acc,
     fidelity_acc_inv,
@@ -517,9 +518,13 @@ class Explain(object):
             else:
                 raise ValueError("pred_type must be correct, wrong or mix.")
             list_idx = self.list_test_idx
+            if self.num_explained_y is not None:
+                size = min(len(list_idx), self.num_explained_y, len(self.dataset))
+            else:
+                size = min(len(list_idx), len(self.dataset))
             explained_y = np.random.choice(
                 list_idx,
-                size=min(len(list_idx), self.num_explained_y, len(self.dataset)),
+                size=size,
                 replace=False,
             )
         else:
@@ -535,8 +540,12 @@ class Explain(object):
             else:
                 raise ValueError("pred_type must be correct, wrong or mix.")
             print("Number of explanable entities: ", len(list_idx))
+            if self.num_explained_y is not None:
+                size = min(len(list_idx), self.num_explained_y, len(self.dataset))
+            else:
+                size = min(len(list_idx), len(self.dataset))
             explained_y = np.random.choice(
-                list_idx, size=min(self.num_explained_y, len(list_idx), self.data.num_nodes), replace=False
+                list_idx, size=size, replace=False
             )
         print("Number of explained entities: ", len(explained_y))
         return explained_y
@@ -612,6 +621,7 @@ def explain_main(dataset, model, device, args, unseen=False):
         "dataset": args.dataset_name,
         "model": args.model_name,
         "task": args.task,
+        "task_target": args.task_target,
         "explainer": args.explainer_name,
         "focus": args.focus,
         "mask_nature": args.mask_nature,
@@ -619,6 +629,30 @@ def explain_main(dataset, model, device, args, unseen=False):
         "time": float(format(np.mean(computation_time), ".4f")),
         "device": str(device),
     }
+
+
+    ### Save results ###
+    save_path = os.path.join(
+        args.result_save_dir, args.dataset_name, args.explainer_name
+    )
+    os.makedirs(save_path, exist_ok=True)
+    unseen_str = "_unseen" if unseen else ""
+    name_path = os.path.join(
+        save_path,
+        "results{}_{}_{}_{}_{}_{}_{}_target{}_{}_{}_{}.csv".format(
+            unseen_str,
+            args.dataset_name,
+            args.model_name,
+            args.explainer_name,
+            args.focus,
+            args.mask_nature,
+            args.num_explained_y,
+            args.explained_target,
+            args.pred_type,
+            str(device),
+            args.seed
+        ),
+    )
 
     if (edge_masks is None) or (not edge_masks):
         raise ValueError("Edge masks are None")
@@ -633,6 +667,9 @@ def explain_main(dataset, model, device, args, unseen=False):
         # Evaluate scores of the masks
         top_accuracy_scores, accuracy_scores, fidelity_scores = explainer.eval(edge_masks, node_feat_masks)
         eval_scores = {**top_accuracy_scores, **accuracy_scores, **fidelity_scores}
+        print('iteration:', i)
+        print('params_transf:', params_transf)
+        print('eval_scores:', eval_scores)
         scores = {
             key: value
             for key, value in sorted(
@@ -644,30 +681,11 @@ def explain_main(dataset, model, device, args, unseen=False):
         }
         if i == 0:
             results = pd.DataFrame({k: [v] for k, v in scores.items()})
+            results.to_csv(name_path, index=False)
         else:
-            results = results.append(scores, ignore_index=True)
-    ### Save results ###
-    save_path = os.path.join(
-        args.result_save_dir, args.dataset_name, args.explainer_name
-    )
-    os.makedirs(save_path, exist_ok=True)
-    unseen_str = "_unseen" if unseen else ""
-    results.to_csv(
-        os.path.join(
-            save_path,
-            "results{}_{}_{}_{}_{}_{}_{}_target{}_{}_{}_{}.csv".format(
-                unseen_str,
-                args.dataset_name,
-                args.model_name,
-                args.explainer_name,
-                args.focus,
-                args.mask_nature,
-                args.num_explained_y,
-                args.explained_target,
-                args.pred_type,
-                str(device),
-                args.seed
-            ),
-        )
-    )
+            results = pd.concat([results, pd.DataFrame([scores])], ignore_index=True)
+            with open(name_path, "a+", newline='') as f:
+                dict_writer = DictWriter(f, fieldnames=scores.keys())
+                dict_writer.writerow(scores)
+    
 

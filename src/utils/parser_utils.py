@@ -238,7 +238,7 @@ def arg_parse():
         "--num_explained_y",
         help="number of explained entities (graphs or nodes)",
         type=int,
-        default=10,
+        default=None,
     )
     parser_explainer_params.add_argument(
         "--time_limit",
@@ -283,11 +283,11 @@ def arg_parse():
     parser.set_defaults(
         dataset_name="ieee24",
         focus="phenomenon",
-        mask_nature="soft",
+        mask_nature="hard",
         groundtruth= "True",
         task_target="graph",
         task="multi_classification",
-        num_explained_y=5,
+        num_explained_y=None,
         num_layers=3,
         hidden_dim=16,
         num_epochs=50,

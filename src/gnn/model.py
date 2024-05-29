@@ -7,11 +7,10 @@ GNN models, How it is structured and types of GNN models: Transformer, GAT, GCN,
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, GATConv, NNConv, GINEConv, TransformerConv
 from torch_geometric.data.batch import Batch
 from torch_geometric.nn.glob import global_mean_pool, global_add_pool, global_max_pool
-
+from utils.gen_utils import from_adj_to_edge_index_torch
 
 def get_gnnNets(input_dim, output_dim, model_params, task):
     if model_params["model_name"].lower() in [
@@ -116,6 +115,8 @@ class GNNBase(nn.Module):
             elif len(args) == 4:
                 x, edge_index, edge_attr, batch = args[0], args[1], args[2], args[3]
                 edge_weight = torch.ones(edge_index.shape[1], dtype=torch.float32, device=x.device)
+            elif len(args) == 5:
+                x, edge_index, edge_attr, edge_weight, batch = args[0], args[1], args[2], args[3], args[4]
             else:
                 raise ValueError(
                     f"forward's args should take 1, 2 or 3 arguments but got {len(args)}"
@@ -127,6 +128,7 @@ class GNNBase(nn.Module):
                 edge_index = kwargs.get("edge_index")
                 adj = kwargs.get("adj")
                 edge_weight = kwargs.get("edge_weight")
+                device = x.device
                 if "edge_index" not in kwargs:
                     assert (
                         adj is not None
@@ -137,6 +139,8 @@ class GNNBase(nn.Module):
                         edge_index, edge_weight = from_adj_to_edge_index_torch(
                             torch.from_numpy(adj)
                         )
+                    edge_index = edge_index.to(device)
+                    edge_weight = edge_weight.to(device)
                 if "adj" not in kwargs:
                     assert (
                         edge_index is not None
@@ -239,30 +243,30 @@ class GNN_basic(GNNBase):
         if self.task.endswith("regression"):
             return self.logits
         else:
-            self.probs = F.log_softmax(self.logits, dim=-1)
+            self.probs = nn.functional.log_softmax(self.logits, dim=-1)
             return self.probs
 
     def loss(self, pred, label):
         if self.task.endswith("regression"):
-            return F.mse_loss(pred, label)
+            return nn.functional.mse_loss(pred, label)
         else:
-            return F.cross_entropy(pred, label)
+            return nn.functional.cross_entropy(pred, label)
 
     def get_emb(self, *args, **kwargs):
         x, edge_index, edge_attr, edge_weight, _ = self._argsparse(*args, **kwargs)
 
         for layer in self.convs:
             x = layer(x, edge_index, edge_attr*edge_weight[:,None]) 
-            x = F.relu(x) #nn.LeakyReLU()
-            x = F.dropout(x, self.dropout, training=self.training)
+            x = nn.functional.relu(x) #nn.LeakyReLU()
+            x = nn.functional.dropout(x, self.dropout, training=self.training)
         return x
 
     def get_graph_rep(self, *args, **kwargs):
         x, edge_index, edge_attr, edge_weight, batch = self._argsparse(*args, **kwargs)
         for layer in self.convs:
             x = layer(x, edge_index, edge_attr*edge_weight[:,None])
-            x = F.relu(x) # maybe replace the ReLU with LeakyReLU
-            x = F.dropout(x, self.dropout, training=self.training)
+            x = nn.functional.relu(x) # maybe replace the ReLU with LeakyReLU
+            x = nn.functional.dropout(x, self.dropout, training=self.training)
         x = self.readout_layer(x, batch)
         return x
 
@@ -275,7 +279,7 @@ class GNN_basic(GNNBase):
         emb = self.get_emb(*args, **kwargs)
         x = self.readout_layer(emb, batch)
         self.logits = self.mlps(x)
-        return F.softmax(self.logits, dim=1)
+        return nn.functional.softmax(self.logits, dim=1)
 
 
 
@@ -334,7 +338,7 @@ class GCN(GNN_basic):
         for layer in self.convs:
             x = layer(x, edge_index)
             nn.PReLU()
-            x = F.dropout(x, self.dropout, training=self.training)
+            x = nn.functional.dropout(x, self.dropout, training=self.training)
         return x
 
 
@@ -394,7 +398,7 @@ class TRANSFORMER(GNN_basic): #uppercase
         current_dim = self.input_dim
         for l in range(self.num_layers):
             self.convs.append(
-                   TransformerConv(current_dim, self.hidden_dim, heads=4, edge_dim=self.edge_dim, concat=False)
+                   TransformerConv(current_dim, self.hidden_dim, heads=2, edge_dim=self.edge_dim, concat=False)
                    )
             current_dim = self.hidden_dim
 

@@ -204,6 +204,19 @@ def from_sparse_adj_to_edge_index(adj):
     return edge_index, edge_weight
 
 
+"""def from_adj_to_edge_index_torch(adj):
+    adj_array = np.array(adj.detach().cpu().numpy())  # Convert to NumPy array
+    adj_sparse = csr_matrix(adj_array)
+    edge_index, edge_weight = from_scipy_sparse_matrix(adj_sparse)
+    edge_index = torch.Tensor(edge_index, dtype=torch.long)
+    edge_weight = torch.Tensor(edge_weight, dtype=torch.long)
+    print('edge_index', edge_index)
+    print('edge_weight', edge_weight)
+    # if adj.requires_grad:
+    # edge_index.requires_grad = True
+    # edge_weight.requires_grad = True
+    return edge_index, edge_weight"""
+
 def from_adj_to_edge_index_torch(adj):
     adj_sparse = adj.to_sparse()
     edge_index = adj_sparse.indices().to(dtype=torch.long)

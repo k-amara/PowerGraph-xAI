@@ -4,7 +4,7 @@ import torch
 import torch.nn.functional as F
 from captum._utils.common import (
     _format_additional_forward_args,
-    #_format_input,
+    _format_tensor_into_tuples,
     _format_output,
 )
 from captum._utils.gradient import (
@@ -26,7 +26,7 @@ class GraphLayerGradCam(LayerGradCam):
         attribute_to_layer_input: bool = False,
         relu_attributions: bool = False,
     ) -> Union[Tensor, Tuple[Tensor, ...]]:
-        inputs = _format_input(inputs)
+        inputs = _format_tensor_into_tuples(inputs)
         additional_forward_args = _format_additional_forward_args(
             additional_forward_args
         )

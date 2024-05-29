@@ -412,15 +412,15 @@ class PGExplainer(nn.Module):
         """
         node_idx = kwargs.get("node_idx")
         nodesize = embed.shape[0]
+        col, row = edge_index
+        row = row.to(self.device)
+        col = col.to(self.device)
+        embed = embed.to(self.device)
+        f1 = embed[col]
+        f2 = embed[row]
         if self.explain_graph:
-            col, row = edge_index
-            f1 = embed[col]
-            f2 = embed[row]
             f12self = torch.cat([f1, f2], dim=-1)
         else:
-            col, row = edge_index
-            f1 = embed[col]
-            f2 = embed[row]
             self_embed = embed[node_idx].repeat(f1.shape[0], 1)
             f12self = torch.cat([f1, f2, self_embed], dim=-1)
 
@@ -442,7 +442,10 @@ class PGExplainer(nn.Module):
         self.__set_masks__(x, edge_index, edge_mask)
 
         # the model prediction with edge mask
-        logits = self.model(x, edge_index)
+        if 'edge_attr' in kwargs:
+            logits = self.model(x, edge_index, kwargs['edge_attr'])
+        else:
+            logits = self.model(x, edge_index)
         probs = F.softmax(logits, dim=-1)
 
         self.__clear_masks__()

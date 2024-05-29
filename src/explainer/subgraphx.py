@@ -604,8 +604,14 @@ class SubgraphX(object):
         row, col = self.ori_data.edge_index
         node_mask = torch.zeros(self.ori_data.x.shape[0])
         node_mask[masked_node_list] = 1.0
+        # Move tensors to the desired device
+        node_mask = node_mask.to(self.device)
+        row = row.to(self.device)
+        col = col.to(self.device)
+        # Ensure indices are within range
+        assert torch.max(row) < len(node_mask) and torch.max(col) < len(node_mask), "Indices out of range"
         edge_mask = (node_mask[row] == 1) & (node_mask[col] == 1)
-        edge_mask = edge_mask.detach().numpy()
+        edge_mask = edge_mask.detach().cpu().numpy()
         return edge_mask.astype(int)
 
     def __call__(

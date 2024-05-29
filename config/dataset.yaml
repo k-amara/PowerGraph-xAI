@@ -1,6 +1,6 @@
 ba_2motifs:
   groundtruth: "True"
-  task_target: "node"
+  task_target: "graph"
   task: "binary_classification"
   num_layers: 3
   hidden_dim: 20

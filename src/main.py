@@ -78,10 +78,11 @@ def main(args, args_group):
     'num_classes': args.num_classes,}
     print(info)
 
+    args.data_split_ratio = [args.train_ratio, args.val_ratio, args.test_ratio]
     dataloader_params = {
         "batch_size": args.batch_size,
         "random_split_flag": eval(args.random_split_flag),
-        "data_split_ratio": [args.train_ratio, args.val_ratio, args.test_ratio],
+        "data_split_ratio": args.data_split_ratio,
         "seed": args.seed,
     }
 

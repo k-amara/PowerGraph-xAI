@@ -238,7 +238,7 @@ class TrainModel(object):
             for epoch in range(num_epochs):
                 is_best = False
                 self.model.train()
-                if self.task.endswith("classification"):
+                if self.task_target == "graph":
                     losses = []
                     for batch in self.loader["train"]:
                         batch = batch.to(self.device)
@@ -246,9 +246,11 @@ class TrainModel(object):
                         losses.append(loss)
                     train_loss = torch.FloatTensor(losses).mean().item()
             
-                else:
+                elif self.task_target == "node":
                     data = self.dataset.data.to(self.device)
                     train_loss = self._train_batch(data, data.y)
+                else:
+                    raise ValueError("Task target not supported. Must be graph or node")
             
                 with torch.no_grad():
                     eval_loss, eval_acc, eval_balanced_acc, eval_f1_score = self.eval()
@@ -296,7 +298,7 @@ class TrainModel(object):
             for epoch in range(num_epochs):
                 is_best = False
                 self.model.train()
-                if self.task == "regression":
+                if self.task_target == "graph":
                     losses = []
                     for batch in self.loader["train"]:
                         batch = batch.to(self.device)
@@ -304,9 +306,11 @@ class TrainModel(object):
                         losses.append(loss)
                     train_loss = torch.FloatTensor(losses).mean().item()
 
-                else:
+                elif self.task_target == "node":
                     data = self.dataset.data.to(self.device)
                     train_loss = self._train_batch(data, data.y)
+                else:
+                    raise ValueError("Task target not supported. Must be graph or node")
 
                 with torch.no_grad():
                     eval_loss, eval_r2score = self.eval()

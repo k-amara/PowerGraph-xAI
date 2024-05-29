@@ -4,7 +4,7 @@ import os
 
 # CKPT_ROOT = "C:/Users/avarbella/Documents/GraphGym-master/powergrid_datasets/"
 # CKPT_ROOT = "/cluster/work/zhang/kamara/powergraph-storage/"
-CKPT_ROOT = "./"#"C:/Users/kenzaamara/GithubProjects/powergrid_datasets/"
+CKPT_ROOT = "C:/Users/kenzaamara/GithubProjects/powergrid_datasets/"
 
 DATA_DIR = CKPT_ROOT + "dataset/"
 MODEL_DIR = CKPT_ROOT + "model/"
