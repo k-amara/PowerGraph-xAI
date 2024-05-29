@@ -136,6 +136,7 @@ dmypy.json
 logs/
 error/
 .git/
+dataset/
 <<<<<<< HEAD
 clutils/
 config_euler/
